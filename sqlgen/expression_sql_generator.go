@@ -438,6 +438,7 @@ func (esg *expressionSQLGenerator) booleanExpressionSQL(b sb.SQLBuilder, operato
 			}
 		}
 	}
+
 	b.WriteRunes(esg.dialectOptions.SpaceRune)
 
 	if (operatorOp == exp.IsOp || operatorOp == exp.IsNotOp) && rhs == nil && !esg.dialectOptions.BooleanDataTypeSupported {
@@ -445,6 +446,15 @@ func (esg *expressionSQLGenerator) booleanExpressionSQL(b sb.SQLBuilder, operato
 		b.Write(esg.dialectOptions.Null)
 	} else {
 		esg.Generate(b, rhs)
+	}
+
+	if operatorOp == exp.LikeOp || operatorOp == exp.NotLikeOp {
+		if len(esg.dialectOptions.LikeEscapeKey) > 0 {
+			b.WriteRunes(esg.dialectOptions.SpaceRune)
+			b.WriteStrings(esg.dialectOptions.LikeEscapeKey)
+			b.WriteRunes(esg.dialectOptions.SpaceRune)
+			esg.Generate(b, esg.dialectOptions.LikeEscapeValue)
+		}
 	}
 
 	b.WriteRunes(esg.dialectOptions.RightParenRune)

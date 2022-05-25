@@ -43,7 +43,7 @@ func (qes *queryExecutorSuite) TestWithError() {
 	db, _, err := sqlmock.New()
 	qes.NoError(err)
 	expectedErr := fmt.Errorf("crud exec error")
-	e := newQueryExecutor(db, expectedErr, `SELECT * FROM "items"`)
+	e := newQueryExecutor("db", db, expectedErr, `SELECT * FROM "items"`)
 	var items []StructWithTags
 	qes.EqualError(e.ScanStructs(&items), expectedErr.Error())
 	qes.EqualError(e.ScanStructsContext(ctx, &items), expectedErr.Error())
@@ -69,7 +69,7 @@ func (qes *queryExecutorSuite) TestToSQL() {
 	db, _, err := sqlmock.New()
 	qes.NoError(err)
 
-	e := newQueryExecutor(db, nil, `SELECT * FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT * FROM "items"`)
 	query, args, err := e.ToSQL()
 	qes.NoError(err)
 	qes.Equal(`SELECT * FROM "items"`, query)
@@ -92,7 +92,7 @@ func (qes *queryExecutorSuite) TestScanStructs_withTaggedFields() {
 			AddRow(testAddr2, testName2),
 		)
 
-	e := newQueryExecutor(db, nil, `SELECT * FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT * FROM "items"`)
 
 	var items []StructWithTags
 	qes.NoError(e.ScanStructs(&items))
@@ -116,7 +116,7 @@ func (qes *queryExecutorSuite) TestScanStructs_withUntaggedFields() {
 			AddRow(testAddr1, testName1).
 			AddRow(testAddr2, testName2))
 
-	e := newQueryExecutor(db, nil, `SELECT * FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT * FROM "items"`)
 
 	var items []StructWithNoTags
 	qes.NoError(e.ScanStructs(&items))
@@ -149,7 +149,7 @@ func (qes *queryExecutorSuite) TestScanStructs_withPointerFields() {
 			AddRow(nil, nil, nil, nil, nil),
 		)
 
-	e := newQueryExecutor(db, nil, `SELECT * FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT * FROM "items"`)
 
 	var items []StructWithPointerFields
 	qes.NoError(e.ScanStructs(&items))
@@ -177,7 +177,7 @@ func (qes *queryExecutorSuite) TestScanStructs_withPrivateFields() {
 			AddRow(testAddr2, testName2),
 		)
 
-	e := newQueryExecutor(db, nil, `SELECT * FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT * FROM "items"`)
 
 	var items []StructWithPrivateTags
 	qes.NoError(e.ScanStructs(&items))
@@ -203,7 +203,7 @@ func (qes *queryExecutorSuite) TestScanStructs_pointers() {
 			AddRow(testAddr2, testName2),
 		)
 
-	e := newQueryExecutor(db, nil, `SELECT * FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT * FROM "items"`)
 
 	var items []*StructWithTags
 	qes.NoError(e.ScanStructs(&items))
@@ -234,7 +234,7 @@ func (qes *queryExecutorSuite) TestScanStructs_withIgnoredEmbeddedStruct() {
 			AddRow(testPhone1, testAge1).AddRow(testPhone2, testAge2),
 		)
 
-	e := newQueryExecutor(db, nil, `SELECT * FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT * FROM "items"`)
 
 	var composed []ComposedIgnoredStruct
 	qes.NoError(e.ScanStructs(&composed))
@@ -264,7 +264,7 @@ func (qes *queryExecutorSuite) TestScanStructs_withEmbeddedStruct() {
 			AddRow(testAddr2, testName2, testPhone2, testAge2),
 		)
 
-	e := newQueryExecutor(db, nil, `SELECT * FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT * FROM "items"`)
 
 	var composed []ComposedStruct
 	qes.NoError(e.ScanStructs(&composed))
@@ -295,7 +295,7 @@ func (qes *queryExecutorSuite) TestScanStructs_pointersWithEmbeddedStruct() {
 			AddRow(testAddr2, testName2, testPhone2, testAge2),
 		)
 
-	e := newQueryExecutor(db, nil, `SELECT * FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT * FROM "items"`)
 
 	var composed []*ComposedStruct
 	qes.NoError(e.ScanStructs(&composed))
@@ -327,7 +327,7 @@ func (qes *queryExecutorSuite) TestScanStructs_pointersWithEmbeddedStructDuplica
 			AddRow(testAddr2, testName2, otherAddr2, otherName2),
 		)
 
-	e := newQueryExecutor(db, nil, `SELECT * FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT * FROM "items"`)
 
 	var composed []*ComposedStructWithDuplicateFields
 	qes.NoError(e.ScanStructs(&composed))
@@ -367,7 +367,7 @@ func (qes *queryExecutorSuite) TestScanStructs_pointersWithEmbeddedPointerDuplic
 			AddRow(testAddr2, testName2, otherAddr2, otherName2),
 		)
 
-	e := newQueryExecutor(db, nil, `SELECT * FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT * FROM "items"`)
 
 	var composed []*ComposedWithWithPointerWithDuplicateFields
 	qes.NoError(e.ScanStructs(&composed))
@@ -407,7 +407,7 @@ func (qes *queryExecutorSuite) TestScanStructs_withIgnoredEmbeddedPointerStruct(
 			AddRow(testPhone2, testAge2),
 		)
 
-	e := newQueryExecutor(db, nil, `SELECT * FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT * FROM "items"`)
 
 	var composed []ComposedIgnoredPointerStruct
 	qes.NoError(e.ScanStructs(&composed))
@@ -439,7 +439,7 @@ func (qes *queryExecutorSuite) TestScanStructs_withEmbeddedStructPointer() {
 			AddRow(testAddr2, testName2, testPhone2, testAge2),
 		)
 
-	e := newQueryExecutor(db, nil, `SELECT * FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT * FROM "items"`)
 
 	var composed []ComposedWithPointerStruct
 	qes.NoError(e.ScanStructs(&composed))
@@ -470,7 +470,7 @@ func (qes *queryExecutorSuite) TestScanStructs_pointersWithEmbeddedStructPointer
 			AddRow(testAddr2, testName2, testPhone2, testAge2),
 		)
 
-	e := newQueryExecutor(db, nil, `SELECT * FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT * FROM "items"`)
 
 	var composed []*ComposedWithPointerStruct
 	qes.NoError(e.ScanStructs(&composed))
@@ -509,7 +509,7 @@ func (qes *queryExecutorSuite) TestScanStructs_badValue() {
 				WillReturnRows(sqlmock.NewRows([]string{"address", "name"}).
 					AddRow(testAddr1, testName1).AddRow(testAddr2, testName2),
 				)
-			e := newQueryExecutor(db, nil, `SELECT * FROM "items"`)
+			e := newQueryExecutor("db", db, nil, `SELECT * FROM "items"`)
 			qes.Equal(errUnsupportedScanStructsType, e.ScanStructs(test.items))
 		})
 	}
@@ -527,7 +527,7 @@ func (qes *queryExecutorSuite) TestScanStructs_queryError() {
 	mock.ExpectQuery(`SELECT \* FROM "items"`).
 		WillReturnError(fmt.Errorf("queryExecutor error"))
 
-	e := newQueryExecutor(db, nil, `SELECT * FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT * FROM "items"`)
 
 	var items []StructWithTags
 	qes.EqualError(e.ScanStructs(&items), "queryExecutor error")
@@ -550,7 +550,7 @@ func (qes *queryExecutorSuite) TestScanStructsContext_withTaggedFields() {
 			AddRow(testAddr2, testName2),
 		)
 
-	e := newQueryExecutor(db, nil, `SELECT * FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT * FROM "items"`)
 
 	var items []StructWithTags
 	qes.NoError(e.ScanStructsContext(ctx, &items))
@@ -577,7 +577,7 @@ func (qes *queryExecutorSuite) TestScanStructsContext_withUntaggedFields() {
 			AddRow(testAddr2, testName2),
 		)
 
-	e := newQueryExecutor(db, nil, `SELECT * FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT * FROM "items"`)
 
 	var items []StructWithNoTags
 	qes.NoError(e.ScanStructsContext(ctx, &items))
@@ -603,7 +603,7 @@ func (qes *queryExecutorSuite) TestScanStructsContext_withPointerFields() {
 			AddRow(testAddr2, testName2),
 		)
 
-	e := newQueryExecutor(db, nil, `SELECT * FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT * FROM "items"`)
 
 	var items []StructWithPointerFields
 	qes.NoError(e.ScanStructsContext(ctx, &items))
@@ -630,7 +630,7 @@ func (qes *queryExecutorSuite) TestScanStructsContext_pointers() {
 			AddRow(testAddr2, testName2),
 		)
 
-	e := newQueryExecutor(db, nil, `SELECT * FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT * FROM "items"`)
 
 	var items []*StructWithTags
 	qes.NoError(e.ScanStructsContext(ctx, &items))
@@ -661,7 +661,7 @@ func (qes *queryExecutorSuite) TestScanStructsContext_withEmbeddedStruct() {
 			AddRow(testAddr2, testName2, testPhone2, testAge2),
 		)
 
-	e := newQueryExecutor(db, nil, `SELECT * FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT * FROM "items"`)
 
 	var composed []ComposedStruct
 	qes.NoError(e.ScanStructsContext(ctx, &composed))
@@ -694,7 +694,7 @@ func (qes *queryExecutorSuite) TestScanStructsContext_withIgnoredEmbeddedStruct(
 			AddRow(testPhone2, testAge2),
 		)
 
-	e := newQueryExecutor(db, nil, `SELECT * FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT * FROM "items"`)
 
 	var composed []ComposedIgnoredStruct
 	qes.NoError(e.ScanStructsContext(ctx, &composed))
@@ -725,7 +725,7 @@ func (qes *queryExecutorSuite) TestScanStructsContext_pointersWithEmbeddedStruct
 			AddRow(testAddr2, testName2, testPhone2, testAge2),
 		)
 
-	e := newQueryExecutor(db, nil, `SELECT * FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT * FROM "items"`)
 
 	var composed []*ComposedStruct
 	qes.NoError(e.ScanStructsContext(ctx, &composed))
@@ -758,7 +758,7 @@ func (qes *queryExecutorSuite) TestScanStructsContext_withEmbeddedStructPointer(
 			AddRow(testAddr2, testName2, testPhone2, testAge2),
 		)
 
-	e := newQueryExecutor(db, nil, `SELECT * FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT * FROM "items"`)
 
 	var composed []ComposedWithPointerStruct
 	qes.NoError(e.ScanStructsContext(ctx, &composed))
@@ -791,7 +791,7 @@ func (qes *queryExecutorSuite) TestScanStructsContext_pointersWithEmbeddedStruct
 			AddRow(testAddr2, testName2, testPhone2, testAge2),
 		)
 
-	e := newQueryExecutor(db, nil, `SELECT * FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT * FROM "items"`)
 
 	var composed []*ComposedWithPointerStruct
 	qes.NoError(e.ScanStructsContext(ctx, &composed))
@@ -830,7 +830,7 @@ func (qes *queryExecutorSuite) TestScanStructsContext_badValue() {
 				WillReturnRows(sqlmock.NewRows([]string{"address", "name"}).
 					AddRow(testAddr1, testName1).AddRow(testAddr2, testName2),
 				)
-			e := newQueryExecutor(db, nil, `SELECT * FROM "items"`)
+			e := newQueryExecutor("db", db, nil, `SELECT * FROM "items"`)
 			qes.Equal(errUnsupportedScanStructsType, e.ScanStructsContext(context.Background(), test.items))
 		})
 	}
@@ -849,7 +849,7 @@ func (qes *queryExecutorSuite) TestScanStructsContext_queryError() {
 	mock.ExpectQuery(`SELECT \* FROM "items"`).
 		WillReturnError(fmt.Errorf("queryExecutor error"))
 
-	e := newQueryExecutor(db, nil, `SELECT * FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT * FROM "items"`)
 
 	var items []StructWithTags
 	qes.EqualError(e.ScanStructsContext(ctx, &items), "queryExecutor error")
@@ -915,7 +915,7 @@ func (qes *queryExecutorSuite) TestScanStruct() {
 		WithArgs().
 		WillReturnRows(sqlmock.NewRows([]string{"address", "name"}).AddRow(testAddr1, testName1))
 
-	e := newQueryExecutor(db, nil, `SELECT * FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT * FROM "items"`)
 
 	var slicePtr []StructWithTags
 	var item StructWithTags
@@ -1028,7 +1028,7 @@ func (qes *queryExecutorSuite) TestScanStruct_taggedStructs() {
 			testAddr2, testName2, testPhone2, testAge2,
 		))
 
-	e := newQueryExecutor(db, nil, q)
+	e := newQueryExecutor("db", db, nil, q)
 
 	var item StructWithTaggedStructs
 	found, err := e.ScanStruct(&item)
@@ -1075,7 +1075,7 @@ func (qes *queryExecutorSuite) TestScanVals() {
 		WithArgs().
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(id1).AddRow(id2))
 
-	e := newQueryExecutor(db, nil, `SELECT "id" FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT "id" FROM "items"`)
 
 	var ids []int64
 	qes.EqualError(e.ScanVals(&ids), "queryExecutor error")
@@ -1118,7 +1118,7 @@ func (qes *queryExecutorSuite) TestScanValsError() {
 				WithArgs().
 				WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1).AddRow(2))
 
-			e := newQueryExecutor(db, nil, `SELECT "id" FROM "items"`)
+			e := newQueryExecutor("db", db, nil, `SELECT "id" FROM "items"`)
 			qes.Equal(errUnsupportedScanValsType, e.ScanVals(test.items))
 		})
 	}
@@ -1144,7 +1144,7 @@ func (qes *queryExecutorSuite) TestScanVal() {
 		WithArgs().
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(id1))
 
-	e := newQueryExecutor(db, nil, `SELECT "id" FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT "id" FROM "items"`)
 
 	var id int64
 	var ids []int64
@@ -1181,7 +1181,7 @@ func (qes *queryExecutorSuite) TestScanVal_withByteSlice() {
 		WithArgs().
 		WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow(testByteSliceContent))
 
-	e := newQueryExecutor(db, nil, `SELECT "name" FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT "name" FROM "items"`)
 
 	var bytes []byte
 	found, err := e.ScanVal(bytes)
@@ -1202,7 +1202,7 @@ func (qes *queryExecutorSuite) TestScanVal_withRawBytes() {
 		WithArgs().
 		WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow(testByteSliceContent))
 
-	e := newQueryExecutor(db, nil, `SELECT "name" FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT "name" FROM "items"`)
 
 	var bytes sql.RawBytes
 	found, err := e.ScanVal(bytes)
@@ -1229,7 +1229,7 @@ func (qes *queryExecutorSuite) TestScanVal_withValuerSlice() {
 		WithArgs().
 		WillReturnRows(sqlmock.NewRows([]string{"bools"}).FromCSVString(`"[true, false, true]"`))
 
-	e := newQueryExecutor(db, nil, `SELECT "bools" FROM "items"`)
+	e := newQueryExecutor("db", db, nil, `SELECT "bools" FROM "items"`)
 
 	var bools JSONBoolArray
 	found, err := e.ScanVal(bools)

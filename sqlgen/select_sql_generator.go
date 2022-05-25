@@ -39,8 +39,8 @@ func ErrWindowNotSupported(dialect string) error {
 
 var ErrNoWindowName = errors.New("window expresion has no valid name")
 
-func NewSelectSQLGenerator(dialect string, do *SQLDialectOptions) SelectSQLGenerator {
-	return &selectSQLGenerator{NewCommonSQLGenerator(dialect, do)}
+func NewSelectSQLGenerator(dialect, tagName string, do *SQLDialectOptions) SelectSQLGenerator {
+	return &selectSQLGenerator{NewCommonSQLGenerator(dialect, tagName, do)}
 }
 
 func (ssg *selectSQLGenerator) Generate(b sb.SQLBuilder, clauses exp.SelectClauses) {

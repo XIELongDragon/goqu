@@ -387,7 +387,7 @@ func (esgs *expressionSQLGeneratorSuite) TestGenerate_AppendableExpression() {
 }
 
 func (esgs *expressionSQLGeneratorSuite) TestGenerate_ColumnList() {
-	cl := exp.NewColumnListExpression(nil, "a", exp.NewLiteralExpression("true"))
+	cl := exp.NewColumnListExpression(nil, "db", "a", exp.NewLiteralExpression("true"))
 	esgs.assertCases(
 		sqlgen.NewExpressionSQLGenerator("test", sqlgen.DefaultDialectOptions()),
 		expressionTestCase{val: cl, sql: `"a", true`},
@@ -813,6 +813,7 @@ func (esgs *expressionSQLGeneratorSuite) TestGenerate_SQLWindowFunctionExpressio
 		exp.NewSQLFunctionExpression("some_func"),
 		nil,
 		exp.NewWindowExpression(
+			"db",
 			nil,
 			exp.NewIdentifierExpression("", "", "win"),
 			nil,
@@ -834,6 +835,7 @@ func (esgs *expressionSQLGeneratorSuite) TestGenerate_SQLWindowFunctionExpressio
 		exp.NewSQLFunctionExpression("some_func"),
 		nil,
 		exp.NewWindowExpression(
+			"db",
 			exp.NewIdentifierExpression("", "", "w"),
 			nil,
 			nil,
@@ -868,27 +870,28 @@ func (esgs *expressionSQLGeneratorSuite) TestGenerate_WindowExpression() {
 	opts.WindowPartitionByFragment = []byte("partition by ")
 	opts.WindowOrderByFragment = []byte("order by ")
 
-	emptySQLWinFunc := exp.NewWindowExpression(nil, nil, nil, nil)
+	emptySQLWinFunc := exp.NewWindowExpression("db", nil, nil, nil, nil)
 	namedSQLWinFunc := exp.NewWindowExpression(
-		exp.NewIdentifierExpression("", "", "w"), nil, nil, nil,
+		"db", exp.NewIdentifierExpression("", "", "w"), nil, nil, nil,
 	)
 	inheritSQLWinFunc := exp.NewWindowExpression(
-		nil, exp.NewIdentifierExpression("", "", "w"), nil, nil,
+		"db", nil, exp.NewIdentifierExpression("", "", "w"), nil, nil,
 	)
 	partitionBySQLWinFunc := exp.NewWindowExpression(
-		nil, nil, exp.NewColumnListExpression(nil, "a", "b"), nil,
+		"db", nil, nil, exp.NewColumnListExpression(nil, "db", "a", "b"), nil,
 	)
 	orderBySQLWinFunc := exp.NewWindowExpression(
-		nil, nil, nil, exp.NewOrderedColumnList(
+		"db", nil, nil, nil, exp.NewOrderedColumnList(
 			exp.NewIdentifierExpression("", "", "a").Asc(),
 			exp.NewIdentifierExpression("", "", "b").Desc(),
 		),
 	)
 
 	namedInheritPartitionOrderSQLWinFunc := exp.NewWindowExpression(
+		"db",
 		exp.NewIdentifierExpression("", "", "w1"),
 		exp.NewIdentifierExpression("", "", "w2"),
-		exp.NewColumnListExpression(nil, "a", "b"),
+		exp.NewColumnListExpression(nil, "db", "a", "b"),
 		exp.NewOrderedColumnList(
 			exp.NewIdentifierExpression("", "", "a").Asc(),
 			exp.NewIdentifierExpression("", "", "b").Desc(),

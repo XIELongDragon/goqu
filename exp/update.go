@@ -19,7 +19,7 @@ func set(col IdentifierExpression, val interface{}) UpdateExpression {
 	return update{col: col, val: val}
 }
 
-func NewUpdateExpressions(update interface{}) (updates []UpdateExpression, err error) {
+func NewUpdateExpressions(tagName string, update interface{}) (updates []UpdateExpression, err error) {
 	if u, ok := update.(UpdateExpression); ok {
 		updates = append(updates, u)
 		return updates, nil
@@ -33,15 +33,15 @@ func NewUpdateExpressions(update interface{}) (updates []UpdateExpression, err e
 			updates = append(updates, ParseIdentifier(key.String()).Set(updateValue.MapIndex(key).Interface()))
 		}
 	case reflect.Struct:
-		return getUpdateExpressionsStruct(updateValue)
+		return getUpdateExpressionsStruct(tagName, updateValue)
 	default:
 		return nil, errors.New("unsupported update interface type %+v", updateValue.Type())
 	}
 	return updates, nil
 }
 
-func getUpdateExpressionsStruct(value reflect.Value) (updates []UpdateExpression, err error) {
-	r, err := NewRecordFromStruct(value.Interface(), false, true)
+func getUpdateExpressionsStruct(tagName string, value reflect.Value) (updates []UpdateExpression, err error) {
+	r, err := NewRecordFromStruct(value.Interface(), false, true, tagName)
 	if err != nil {
 		return updates, err
 	}

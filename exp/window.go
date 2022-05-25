@@ -5,20 +5,22 @@ type sqlWindowExpression struct {
 	parent        IdentifierExpression
 	partitionCols ColumnListExpression
 	orderCols     ColumnListExpression
+	tagName       string
 }
 
-func NewWindowExpression(window, parent IdentifierExpression, partitionCols, orderCols ColumnListExpression) WindowExpression {
+func NewWindowExpression(tagName string, window, parent IdentifierExpression, partitionCols, orderCols ColumnListExpression) WindowExpression {
 	if partitionCols == nil {
-		partitionCols = NewColumnListExpression(nil)
+		partitionCols = NewColumnListExpression(nil, tagName)
 	}
 	if orderCols == nil {
-		orderCols = NewColumnListExpression(nil)
+		orderCols = NewColumnListExpression(nil, tagName)
 	}
 	return sqlWindowExpression{
 		name:          window,
 		parent:        parent,
 		partitionCols: partitionCols,
 		orderCols:     orderCols,
+		tagName:       tagName,
 	}
 }
 
@@ -28,6 +30,7 @@ func (we sqlWindowExpression) clone() sqlWindowExpression {
 		parent:        we.parent,
 		partitionCols: we.partitionCols.Clone().(ColumnListExpression),
 		orderCols:     we.orderCols.Clone().(ColumnListExpression),
+		tagName:       we.tagName,
 	}
 }
 
@@ -73,13 +76,13 @@ func (we sqlWindowExpression) HasOrder() bool {
 
 func (we sqlWindowExpression) PartitionBy(cols ...interface{}) WindowExpression {
 	ret := we.clone()
-	ret.partitionCols = NewColumnListExpression(nil, cols...)
+	ret.partitionCols = NewColumnListExpression(nil, we.tagName, cols...)
 	return ret
 }
 
 func (we sqlWindowExpression) OrderBy(cols ...interface{}) WindowExpression {
 	ret := we.clone()
-	ret.orderCols = NewColumnListExpression(nil, cols...)
+	ret.orderCols = NewColumnListExpression(nil, we.tagName, cols...)
 	return ret
 }
 

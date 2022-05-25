@@ -88,6 +88,6 @@ func DialectOptionsV8() *goqu.SQLDialectOptions {
 }
 
 func init() {
-	goqu.RegisterDialect("mysql", DialectOptions())
-	goqu.RegisterDialect("mysql8", DialectOptionsV8())
+	goqu.RegisterDialect("mysql", "db", DialectOptions())
+	goqu.RegisterDialect("mysql8", "db", DialectOptionsV8())
 }

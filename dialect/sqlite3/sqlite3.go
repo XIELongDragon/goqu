@@ -81,5 +81,5 @@ func DialectOptions() *goqu.SQLDialectOptions {
 }
 
 func init() {
-	goqu.RegisterDialect("sqlite3", DialectOptions())
+	goqu.RegisterDialect("sqlite3", "db", DialectOptions())
 }

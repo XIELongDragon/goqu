@@ -11,7 +11,7 @@ type columnList struct {
 	columns []Expression
 }
 
-func NewColumnListExpression(subquerys map[string]Aliaseable, vals ...interface{}) ColumnListExpression {
+func NewColumnListExpression(subquerys map[string]Aliaseable, tagName string, vals ...interface{}) ColumnListExpression {
 	cols := []Expression{}
 	for _, val := range vals {
 		switch t := val.(type) {
@@ -26,7 +26,7 @@ func NewColumnListExpression(subquerys map[string]Aliaseable, vals ...interface{
 			_, valKind := util.GetTypeInfo(val, reflect.Indirect(reflect.ValueOf(val)))
 
 			if valKind == reflect.Struct {
-				cm, err := util.GetColumnMap(val)
+				cm, err := util.GetColumnMap(val, tagName)
 				if err != nil {
 					panic(err.Error())
 				}
@@ -62,7 +62,7 @@ func NewOrderedColumnList(vals ...OrderedExpression) ColumnListExpression {
 	for _, col := range vals {
 		exps = append(exps, col.Expression())
 	}
-	return NewColumnListExpression(nil, exps...)
+	return NewColumnListExpression(nil, "db", exps...)
 }
 
 func (cl columnList) Clone() Expression {

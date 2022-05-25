@@ -32,7 +32,7 @@ func (s *scannerSuite) TestScanStructs() {
 	rows, err := db.Query(`SELECT * FROM "items"`)
 	s.Require().NoError(err)
 
-	sc := NewScanner(rows)
+	sc := NewScanner(rows, "db")
 
 	result := make([]StructWithTags, 0)
 	err = sc.ScanStructs(result)
@@ -57,7 +57,7 @@ func (s *scannerSuite) TestScanVals() {
 	rows, err := db.Query(`SELECT "id" FROM "items"`)
 	s.Require().NoError(err)
 
-	sc := NewScanner(rows)
+	sc := NewScanner(rows, "db")
 
 	result := make([]int, 0)
 	err = sc.ScanVals(result)

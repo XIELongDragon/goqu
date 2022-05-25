@@ -40,11 +40,11 @@ func (dsgs *deleteSQLGeneratorSuite) assertCases(dsg sqlgen.DeleteSQLGenerator, 
 
 func (dsgs *deleteSQLGeneratorSuite) TestDialect() {
 	opts := sqlgen.DefaultDialectOptions()
-	d := sqlgen.NewDeleteSQLGenerator("test", opts)
+	d := sqlgen.NewDeleteSQLGenerator("test", "db", opts)
 	dsgs.Equal("test", d.Dialect())
 
 	opts2 := sqlgen.DefaultDialectOptions()
-	d2 := sqlgen.NewDeleteSQLGenerator("test2", opts2)
+	d2 := sqlgen.NewDeleteSQLGenerator("test2", "db", opts2)
 	dsgs.Equal("test2", d2.Dialect())
 }
 
@@ -53,7 +53,7 @@ func (dsgs *deleteSQLGeneratorSuite) TestGenerate() {
 		SetFrom(exp.NewIdentifierExpression("", "test", ""))
 
 	dsgs.assertCases(
-		sqlgen.NewDeleteSQLGenerator("test", sqlgen.DefaultDialectOptions()),
+		sqlgen.NewDeleteSQLGenerator("test", "db", sqlgen.DefaultDialectOptions()),
 		deleteTestCase{clause: dc, sql: `DELETE FROM "test"`},
 		deleteTestCase{clause: dc, sql: `DELETE FROM "test"`, isPrepared: true},
 	)
@@ -62,7 +62,7 @@ func (dsgs *deleteSQLGeneratorSuite) TestGenerate() {
 	opts2.DeleteClause = []byte("delete")
 
 	dsgs.assertCases(
-		sqlgen.NewDeleteSQLGenerator("test", opts2),
+		sqlgen.NewDeleteSQLGenerator("test", "db", opts2),
 		deleteTestCase{clause: dc, sql: `delete FROM "test"`},
 		deleteTestCase{clause: dc, sql: `delete FROM "test"`, isPrepared: true},
 	)
@@ -75,7 +75,7 @@ func (dsgs *deleteSQLGeneratorSuite) TestGenerate_withUnsupportedFragment() {
 		SetFrom(exp.NewIdentifierExpression("", "test", ""))
 
 	dsgs.assertCases(
-		sqlgen.NewDeleteSQLGenerator("test", opts),
+		sqlgen.NewDeleteSQLGenerator("test", "db", opts),
 		deleteTestCase{clause: dc, err: `goqu: unsupported DELETE SQL fragment InsertBeingSQLFragment`},
 		deleteTestCase{clause: dc, err: `goqu: unsupported DELETE SQL fragment InsertBeingSQLFragment`, isPrepared: true},
 	)
@@ -84,7 +84,7 @@ func (dsgs *deleteSQLGeneratorSuite) TestGenerate_withUnsupportedFragment() {
 func (dsgs *deleteSQLGeneratorSuite) TestGenerate_noFrom() {
 	dc := exp.NewDeleteClauses()
 	dsgs.assertCases(
-		sqlgen.NewDeleteSQLGenerator("test", sqlgen.DefaultDialectOptions()),
+		sqlgen.NewDeleteSQLGenerator("test", "db", sqlgen.DefaultDialectOptions()),
 		deleteTestCase{clause: dc, err: sqlgen.ErrNoSourceForDelete.Error()},
 		deleteTestCase{clause: dc, err: sqlgen.ErrNoSourceForDelete.Error(), isPrepared: true},
 	)
@@ -92,7 +92,7 @@ func (dsgs *deleteSQLGeneratorSuite) TestGenerate_noFrom() {
 
 func (dsgs *deleteSQLGeneratorSuite) TestGenerate_withErroredBuilder() {
 	opts := sqlgen.DefaultDialectOptions()
-	d := sqlgen.NewDeleteSQLGenerator("test", opts)
+	d := sqlgen.NewDeleteSQLGenerator("test", "db", opts)
 
 	dc := exp.NewDeleteClauses().SetFrom(exp.NewIdentifierExpression("", "test", ""))
 	b := sb.NewSQLBuilder(false).SetError(errors.New("expected error"))
@@ -116,7 +116,7 @@ func (dsgs *deleteSQLGeneratorSuite) TestGenerate_withCommonTables() {
 	dcCte2 := dc.CommonTablesAppend(exp.NewCommonTableExpression(true, "test_cte", tse))
 
 	dsgs.assertCases(
-		sqlgen.NewDeleteSQLGenerator("test", opts),
+		sqlgen.NewDeleteSQLGenerator("test", "db", opts),
 		deleteTestCase{clause: dcCte1, sql: `with test_cte AS (select * from foo) DELETE FROM "test_cte"`},
 		deleteTestCase{clause: dcCte1, sql: `with test_cte AS (select * from foo) DELETE FROM "test_cte"`, isPrepared: true},
 
@@ -127,7 +127,7 @@ func (dsgs *deleteSQLGeneratorSuite) TestGenerate_withCommonTables() {
 	opts.SupportsWithCTE = false
 	expectedErr := sqlgen.ErrCTENotSupported("test")
 	dsgs.assertCases(
-		sqlgen.NewDeleteSQLGenerator("test", opts),
+		sqlgen.NewDeleteSQLGenerator("test", "db", opts),
 		deleteTestCase{clause: dcCte1, err: expectedErr.Error()},
 		deleteTestCase{clause: dcCte1, err: expectedErr.Error(), isPrepared: true},
 
@@ -139,7 +139,7 @@ func (dsgs *deleteSQLGeneratorSuite) TestGenerate_withCommonTables() {
 	opts.SupportsWithCTERecursive = false
 	expectedErr = sqlgen.ErrRecursiveCTENotSupported("test")
 	dsgs.assertCases(
-		sqlgen.NewDeleteSQLGenerator("test", opts),
+		sqlgen.NewDeleteSQLGenerator("test", "db", opts),
 		deleteTestCase{clause: dcCte1, sql: `with test_cte AS (select * from foo) DELETE FROM "test_cte"`},
 		deleteTestCase{clause: dcCte1, sql: `with test_cte AS (select * from foo) DELETE FROM "test_cte"`, isPrepared: true},
 
@@ -153,7 +153,7 @@ func (dsgs *deleteSQLGeneratorSuite) TestGenerate_withWhere() {
 		SetFrom(exp.NewIdentifierExpression("", "test", "")).
 		WhereAppend(exp.NewLiteralExpression(`"a"=?`, 1))
 	dsgs.assertCases(
-		sqlgen.NewDeleteSQLGenerator("test", sqlgen.DefaultDialectOptions()),
+		sqlgen.NewDeleteSQLGenerator("test", "db", sqlgen.DefaultDialectOptions()),
 		deleteTestCase{clause: dc, sql: `DELETE FROM "test" WHERE "a"=1`},
 		deleteTestCase{clause: dc, sql: `DELETE FROM "test" WHERE "a"=?`, isPrepared: true, args: []interface{}{
 			int64(1),
@@ -170,14 +170,14 @@ func (dsgs *deleteSQLGeneratorSuite) TestGenerate_withOrder() {
 		SetOrder(exp.NewIdentifierExpression("", "", "c").Desc())
 
 	dsgs.assertCases(
-		sqlgen.NewDeleteSQLGenerator("test", opts),
+		sqlgen.NewDeleteSQLGenerator("test", "db", opts),
 		deleteTestCase{clause: dc, sql: `DELETE FROM "test" ORDER BY "c" DESC`},
 		deleteTestCase{clause: dc, sql: `DELETE FROM "test" ORDER BY "c" DESC`, isPrepared: true},
 	)
 
 	opts.SupportsOrderByOnDelete = false
 	dsgs.assertCases(
-		sqlgen.NewDeleteSQLGenerator("test", opts),
+		sqlgen.NewDeleteSQLGenerator("test", "db", opts),
 		deleteTestCase{clause: dc, sql: `DELETE FROM "test"`},
 		deleteTestCase{clause: dc, sql: `DELETE FROM "test"`, isPrepared: true},
 	)
@@ -192,14 +192,14 @@ func (dsgs *deleteSQLGeneratorSuite) TestGenerate_withLimit() {
 		SetLimit(1)
 
 	dsgs.assertCases(
-		sqlgen.NewDeleteSQLGenerator("test", opts),
+		sqlgen.NewDeleteSQLGenerator("test", "db", opts),
 		deleteTestCase{clause: dc, sql: `DELETE FROM "test" LIMIT 1`},
 		deleteTestCase{clause: dc, sql: `DELETE FROM "test" LIMIT ?`, isPrepared: true, args: []interface{}{int64(1)}},
 	)
 
 	opts.SupportsLimitOnDelete = false
 	dsgs.assertCases(
-		sqlgen.NewDeleteSQLGenerator("test", opts),
+		sqlgen.NewDeleteSQLGenerator("test", "db", opts),
 		deleteTestCase{clause: dc, sql: `DELETE FROM "test"`},
 		deleteTestCase{clause: dc, sql: `DELETE FROM "test"`, isPrepared: true},
 	)
@@ -211,10 +211,10 @@ func (dsgs *deleteSQLGeneratorSuite) TestGenerate_withReturning() {
 
 	dc := exp.NewDeleteClauses().
 		SetFrom(exp.NewIdentifierExpression("", "test", "")).
-		SetReturning(exp.NewColumnListExpression(nil, "a", "b"))
+		SetReturning(exp.NewColumnListExpression(nil, "db", "a", "b"))
 
 	dsgs.assertCases(
-		sqlgen.NewDeleteSQLGenerator("test", opts),
+		sqlgen.NewDeleteSQLGenerator("test", "db", opts),
 		deleteTestCase{clause: dc, sql: `DELETE FROM "test" RETURNING "a", "b"`},
 		deleteTestCase{clause: dc, sql: `DELETE FROM "test" RETURNING "a", "b"`, isPrepared: true},
 	)
@@ -222,7 +222,7 @@ func (dsgs *deleteSQLGeneratorSuite) TestGenerate_withReturning() {
 	opts.SupportsReturn = false
 	expectedErr := `goqu: dialect does not support RETURNING clause [dialect=test]`
 	dsgs.assertCases(
-		sqlgen.NewDeleteSQLGenerator("test", opts),
+		sqlgen.NewDeleteSQLGenerator("test", "db", opts),
 		deleteTestCase{clause: dc, err: expectedErr},
 		deleteTestCase{clause: dc, err: expectedErr, isPrepared: true},
 	)

@@ -216,7 +216,7 @@ func AssignStructVals(i interface{}, rd rowData, cm ColumnMap) {
 	}
 }
 
-func GetColumnMap(i interface{}) (ColumnMap, error) {
+func GetColumnMap(i interface{}, tagName string) (ColumnMap, error) {
 	val := reflect.Indirect(reflect.ValueOf(i))
 	t, valKind := GetTypeInfo(i, val)
 	if valKind != reflect.Struct {
@@ -226,7 +226,7 @@ func GetColumnMap(i interface{}) (ColumnMap, error) {
 	structMapCacheLock.Lock()
 	defer structMapCacheLock.Unlock()
 	if _, ok := structMapCache[t]; !ok {
-		structMapCache[t] = newColumnMap(t, []int{}, []string{})
+		structMapCache[t] = newColumnMap(t, []int{}, []string{}, tagName)
 	}
 	return structMapCache[t], nil
 }

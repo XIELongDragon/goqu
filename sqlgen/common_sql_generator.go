@@ -26,6 +26,7 @@ func ErrNotSupportedFragment(sqlType string, f SQLFragmentType) error {
 
 type (
 	CommonSQLGenerator interface {
+		TagName() string
 		Dialect() string
 		DialectOptions() *SQLDialectOptions
 		ExpressionSQLGenerator() ExpressionSQLGenerator
@@ -40,13 +41,18 @@ type (
 	}
 	commonSQLGenerator struct {
 		dialect        string
+		tagName        string
 		esg            ExpressionSQLGenerator
 		dialectOptions *SQLDialectOptions
 	}
 )
 
-func NewCommonSQLGenerator(dialect string, do *SQLDialectOptions) CommonSQLGenerator {
-	return &commonSQLGenerator{dialect: dialect, esg: NewExpressionSQLGenerator(dialect, do), dialectOptions: do}
+func NewCommonSQLGenerator(dialect, tagName string, do *SQLDialectOptions) CommonSQLGenerator {
+	return &commonSQLGenerator{dialect: dialect, tagName: tagName, esg: NewExpressionSQLGenerator(dialect, do), dialectOptions: do}
+}
+
+func (csg *commonSQLGenerator) TagName() string {
+	return csg.tagName
 }
 
 func (csg *commonSQLGenerator) Dialect() string {

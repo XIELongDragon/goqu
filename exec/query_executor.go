@@ -11,10 +11,11 @@ import (
 
 type (
 	QueryExecutor struct {
-		de    DbExecutor
-		err   error
-		query string
-		args  []interface{}
+		tagName string
+		de      DbExecutor
+		err     error
+		query   string
+		args    []interface{}
 	}
 )
 
@@ -26,8 +27,8 @@ var (
 	errScanValNonSlice            = errors.New("type cannot be a pointer to a slice when scanning into val")
 )
 
-func newQueryExecutor(de DbExecutor, err error, query string, args ...interface{}) QueryExecutor {
-	return QueryExecutor{de: de, err: err, query: query, args: args}
+func newQueryExecutor(tagName string, de DbExecutor, err error, query string, args ...interface{}) QueryExecutor {
+	return QueryExecutor{tagName: tagName, de: de, err: err, query: query, args: args}
 }
 
 func (q QueryExecutor) ToSQL() (sql string, args []interface{}, err error) {
@@ -243,5 +244,5 @@ func (q QueryExecutor) ScannerContext(ctx context.Context) (Scanner, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewScanner(rows), nil
+	return NewScanner(rows, q.tagName), nil
 }

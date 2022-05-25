@@ -18,19 +18,20 @@ type (
 		FromSQLBuilder(b sb.SQLBuilder) QueryExecutor
 	}
 	querySupport struct {
-		de DbExecutor
+		de      DbExecutor
+		tagName string
 	}
 )
 
-func NewQueryFactory(de DbExecutor) QueryFactory {
-	return &querySupport{de}
+func NewQueryFactory(tagName string, de DbExecutor) QueryFactory {
+	return &querySupport{tagName: tagName, de: de}
 }
 
 func (qs *querySupport) FromSQL(query string, args ...interface{}) QueryExecutor {
-	return newQueryExecutor(qs.de, nil, query, args...)
+	return newQueryExecutor(qs.tagName, qs.de, nil, query, args...)
 }
 
 func (qs *querySupport) FromSQLBuilder(b sb.SQLBuilder) QueryExecutor {
 	query, args, err := b.ToSQL()
-	return newQueryExecutor(qs.de, err, query, args...)
+	return newQueryExecutor(qs.tagName, qs.de, err, query, args...)
 }

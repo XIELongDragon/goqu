@@ -14,24 +14,26 @@ type InsertDataset struct {
 	clauses      exp.InsertClauses
 	isPrepared   prepared
 	queryFactory exec.QueryFactory
+	tagName      string
 	err          error
 }
 
 var ErrUnsupportedIntoType = errors.New("unsupported table type, a string or identifier expression is required")
 
 // used internally by database to create a database with a specific adapter
-func newInsertDataset(d string, queryFactory exec.QueryFactory) *InsertDataset {
+func newInsertDataset(d, tagName string, queryFactory exec.QueryFactory) *InsertDataset {
 	return &InsertDataset{
 		clauses:      exp.NewInsertClauses(),
 		dialect:      GetDialect(d),
 		queryFactory: queryFactory,
+		tagName:      tagName,
 	}
 }
 
 // Creates a new InsertDataset for the provided table. Using this method will only allow you
 // to create SQL user Database#From to create an InsertDataset with query capabilities
 func Insert(table interface{}) *InsertDataset {
-	return newInsertDataset("default", nil).Into(table)
+	return newInsertDataset("default", "db", nil).Into(table)
 }
 
 // Set the parameter interpolation behavior. See examples
@@ -87,6 +89,7 @@ func (id *InsertDataset) copy(clauses exp.InsertClauses) *InsertDataset {
 		clauses:      clauses,
 		isPrepared:   id.isPrepared,
 		queryFactory: id.queryFactory,
+		tagName:      id.tagName,
 		err:          id.err,
 	}
 }
@@ -130,7 +133,7 @@ func (id *InsertDataset) Into(into interface{}) *InsertDataset {
 
 // Sets the Columns to insert into
 func (id *InsertDataset) Cols(cols ...interface{}) *InsertDataset {
-	return id.copy(id.clauses.SetCols(exp.NewColumnListExpression(nil, cols...)))
+	return id.copy(id.clauses.SetCols(exp.NewColumnListExpression(nil, id.tagName, cols...)))
 }
 
 // Clears the Columns to insert into
@@ -140,7 +143,7 @@ func (id *InsertDataset) ClearCols() *InsertDataset {
 
 // Adds columns to the current list of columns clause. See examples
 func (id *InsertDataset) ColsAppend(cols ...interface{}) *InsertDataset {
-	return id.copy(id.clauses.ColsAppend(exp.NewColumnListExpression(nil, cols...)))
+	return id.copy(id.clauses.ColsAppend(exp.NewColumnListExpression(nil, id.tagName, cols...)))
 }
 
 // Adds a subquery to the insert. See examples.
@@ -181,7 +184,7 @@ func (id *InsertDataset) ClearRows() *InsertDataset {
 
 // Adds a RETURNING clause to the dataset if the adapter supports it See examples.
 func (id *InsertDataset) Returning(returning ...interface{}) *InsertDataset {
-	return id.copy(id.clauses.SetReturning(exp.NewColumnListExpression(nil, returning...)))
+	return id.copy(id.clauses.SetReturning(exp.NewColumnListExpression(nil, id.tagName, returning...)))
 }
 
 // Adds an (ON CONFLICT/ON DUPLICATE KEY) clause to the dataset if the dialect supports it. See examples.

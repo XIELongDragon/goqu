@@ -41,11 +41,11 @@ func (ssgs *selectSQLGeneratorSuite) assertCases(ssg sqlgen.SelectSQLGenerator, 
 
 func (ssgs *selectSQLGeneratorSuite) TestDialect() {
 	opts := sqlgen.DefaultDialectOptions()
-	d := sqlgen.NewSelectSQLGenerator("test", opts)
+	d := sqlgen.NewSelectSQLGenerator("test", "db", opts)
 	ssgs.Equal("test", d.Dialect())
 
 	opts2 := sqlgen.DefaultDialectOptions()
-	d2 := sqlgen.NewSelectSQLGenerator("test2", opts2)
+	d2 := sqlgen.NewSelectSQLGenerator("test2", "db", opts2)
 	ssgs.Equal("test2", d2.Dialect())
 }
 
@@ -54,19 +54,21 @@ func (ssgs *selectSQLGeneratorSuite) TestGenerate() {
 	opts.SelectClause = []byte("select")
 	opts.StarRune = '#'
 
-	sc := exp.NewSelectClauses().SetFrom(exp.NewColumnListExpression(nil, "test"))
-	scWithCols := sc.SetSelect(exp.NewColumnListExpression(nil, "a", "b"))
+	sc := exp.NewSelectClauses().SetFrom(exp.NewColumnListExpression(nil, "db", "test"))
+	scWithCols := sc.SetSelect(exp.NewColumnListExpression(nil, "db", "a", "b"))
 
 	ident := exp.NewIdentifierExpression("", "", "a")
 	scWithBooExpAliased := sc.SetSelect(
 		exp.NewColumnListExpression(
+			nil,
+			"db",
 			ident.Eq(1).As("x"),
 			ident.IsNull().As("y"),
 		),
 	)
 
 	ssgs.assertCases(
-		sqlgen.NewSelectSQLGenerator("test", opts),
+		sqlgen.NewSelectSQLGenerator("test", "db", opts),
 		selectTestCase{clause: sc, sql: `select # FROM "test"`},
 		selectTestCase{clause: sc, sql: `select # FROM "test"`, isPrepared: true},
 
@@ -90,10 +92,10 @@ func (ssgs *selectSQLGeneratorSuite) TestGenerate_UnsupportedFragment() {
 	opts := sqlgen.DefaultDialectOptions()
 	opts.SelectSQLOrder = []sqlgen.SQLFragmentType{sqlgen.InsertBeingSQLFragment}
 
-	sc := exp.NewSelectClauses().SetFrom(exp.NewColumnListExpression(nil, "test"))
+	sc := exp.NewSelectClauses().SetFrom(exp.NewColumnListExpression(nil, "db", "test"))
 	expectedErr := "goqu: unsupported SELECT SQL fragment InsertBeingSQLFragment"
 	ssgs.assertCases(
-		sqlgen.NewSelectSQLGenerator("test", opts),
+		sqlgen.NewSelectSQLGenerator("test", "db", opts),
 		selectTestCase{clause: sc, err: expectedErr},
 		selectTestCase{clause: sc, err: expectedErr, isPrepared: true},
 	)
@@ -102,10 +104,10 @@ func (ssgs *selectSQLGeneratorSuite) TestGenerate_UnsupportedFragment() {
 func (ssgs *selectSQLGeneratorSuite) TestGenerate_WithErroredBuilder() {
 	opts := sqlgen.DefaultDialectOptions()
 	opts.SelectSQLOrder = []sqlgen.SQLFragmentType{sqlgen.InsertBeingSQLFragment}
-	d := sqlgen.NewSelectSQLGenerator("test", opts)
+	d := sqlgen.NewSelectSQLGenerator("test", "db", opts)
 
 	b := sb.NewSQLBuilder(true).SetError(errors.New("test error"))
-	c := exp.NewSelectClauses().SetFrom(exp.NewColumnListExpression(nil, "test"))
+	c := exp.NewSelectClauses().SetFrom(exp.NewColumnListExpression(nil, "db", "test"))
 	d.Generate(b, c)
 	ssgs.assertErrorSQL(b, `goqu: test error`)
 }
@@ -118,27 +120,30 @@ func (ssgs *selectSQLGeneratorSuite) TestGenerate_withSelectedColumns() {
 	opts.SupportsDistinctOn = true
 
 	sc := exp.NewSelectClauses()
-	scCols := sc.SetSelect(exp.NewColumnListExpression(nil, "a", "b"))
+	scCols := sc.SetSelect(exp.NewColumnListExpression(nil, "db", "a", "b"))
 	scFuncs := sc.SetSelect(exp.NewColumnListExpression(
 		nil,
+		"db",
 		exp.NewSQLFunctionExpression("COUNT", exp.Star()),
 		exp.NewSQLFunctionExpression("RANK"),
 	))
 
 	we := exp.NewWindowExpression(
+		"db",
 		nil,
 		nil,
-		exp.NewColumnListExpression(nil, "a", "b"),
+		exp.NewColumnListExpression(nil, "db", "a", "b"),
 		exp.NewOrderedColumnList(exp.ParseIdentifier("c").Asc()),
 	)
 	scFuncsPartition := sc.SetSelect(exp.NewColumnListExpression(
 		nil,
+		"db",
 		exp.NewSQLFunctionExpression("COUNT", exp.Star()).Over(we),
 		exp.NewSQLFunctionExpression("RANK").Over(we.Inherit("w")),
 	))
 
 	ssgs.assertCases(
-		sqlgen.NewSelectSQLGenerator("test", opts),
+		sqlgen.NewSelectSQLGenerator("test", "db", opts),
 		selectTestCase{clause: sc, sql: `select #`},
 		selectTestCase{clause: sc, sql: `select #`, isPrepared: true},
 
@@ -169,11 +174,11 @@ func (ssgs *selectSQLGeneratorSuite) TestGenerate_withDistinct() {
 	opts.OnFragment = []byte(" on ")
 	opts.SupportsDistinctOn = true
 
-	sc := exp.NewSelectClauses().SetDistinct(exp.NewColumnListExpression(nil))
-	scDistinctOn := sc.SetDistinct(exp.NewColumnListExpression(nil, "a", "b"))
+	sc := exp.NewSelectClauses().SetDistinct(exp.NewColumnListExpression(nil, "db"))
+	scDistinctOn := sc.SetDistinct(exp.NewColumnListExpression(nil, "db", "a", "b"))
 
 	ssgs.assertCases(
-		sqlgen.NewSelectSQLGenerator("test", opts),
+		sqlgen.NewSelectSQLGenerator("test", "db", opts),
 		selectTestCase{clause: sc, sql: `select distinct #`},
 		selectTestCase{clause: sc, sql: `select distinct #`, isPrepared: true},
 
@@ -185,7 +190,7 @@ func (ssgs *selectSQLGeneratorSuite) TestGenerate_withDistinct() {
 	opts.SupportsDistinctOn = false
 	expectedErr := "goqu: dialect does not support DISTINCT ON clause [dialect=test]"
 	ssgs.assertCases(
-		sqlgen.NewSelectSQLGenerator("test", opts),
+		sqlgen.NewSelectSQLGenerator("test", "db", opts),
 		selectTestCase{clause: sc, sql: `SELECT DISTINCT *`},
 		selectTestCase{clause: sc, sql: `SELECT DISTINCT *`, isPrepared: true},
 
@@ -199,9 +204,9 @@ func (ssgs *selectSQLGeneratorSuite) TestGenerate_withFromSQL() {
 	opts.FromFragment = []byte(" from")
 
 	sc := exp.NewSelectClauses()
-	scFrom := sc.SetFrom(exp.NewColumnListExpression(nil, "a", "b"))
+	scFrom := sc.SetFrom(exp.NewColumnListExpression(nil, "db", "a", "b"))
 	ssgs.assertCases(
-		sqlgen.NewSelectSQLGenerator("test", opts),
+		sqlgen.NewSelectSQLGenerator("test", "db", opts),
 		selectTestCase{clause: sc, sql: `SELECT *`},
 		selectTestCase{clause: sc, sql: `SELECT *`, isPrepared: true},
 
@@ -220,7 +225,7 @@ func (ssgs *selectSQLGeneratorSuite) TestGenerate_withJoin() {
 		exp.NaturalJoinType: []byte(" natural join "),
 	}
 
-	sc := exp.NewSelectClauses().SetFrom(exp.NewColumnListExpression(nil, "test"))
+	sc := exp.NewSelectClauses().SetFrom(exp.NewColumnListExpression(nil, "db", "test"))
 	ti := exp.NewIdentifierExpression("", "test2", "")
 	uj := exp.NewUnConditionedJoinExpression(exp.NaturalJoinType, ti)
 	cjo := exp.NewConditionedJoinExpression(exp.LeftJoinType, ti, exp.NewJoinOnCondition(exp.Ex{"a": "foo"}))
@@ -231,7 +236,7 @@ func (ssgs *selectSQLGeneratorSuite) TestGenerate_withJoin() {
 	expectedRjError := "goqu: dialect does not support RightJoinType"
 	expectedJoinCondError := "goqu: join condition required for conditioned join LeftJoinType"
 	ssgs.assertCases(
-		sqlgen.NewSelectSQLGenerator("test", opts),
+		sqlgen.NewSelectSQLGenerator("test", "db", opts),
 		selectTestCase{clause: sc.JoinsAppend(uj), sql: `SELECT * FROM "test" natural join "test2"`},
 		selectTestCase{clause: sc.JoinsAppend(uj), sql: `SELECT * FROM "test" natural join "test2"`, isPrepared: true},
 
@@ -269,14 +274,14 @@ func (ssgs *selectSQLGeneratorSuite) TestGenerate_withWhere() {
 	opts := sqlgen.DefaultDialectOptions()
 	opts.WhereFragment = []byte(" where ")
 
-	sc := exp.NewSelectClauses().SetFrom(exp.NewColumnListExpression(nil, "test"))
+	sc := exp.NewSelectClauses().SetFrom(exp.NewColumnListExpression(nil, "db", "test"))
 	w := exp.Ex{"a": "b"}
 	w2 := exp.Ex{"b": "c"}
 	scWhere1 := sc.WhereAppend(w)
 	scWhere2 := sc.WhereAppend(w, w2)
 
 	ssgs.assertCases(
-		sqlgen.NewSelectSQLGenerator("test", opts),
+		sqlgen.NewSelectSQLGenerator("test", "db", opts),
 		selectTestCase{clause: scWhere1, sql: `SELECT * FROM "test" where ("a" = 'b')`},
 		selectTestCase{clause: scWhere1, sql: `SELECT * FROM "test" where ("a" = ?)`, isPrepared: true, args: []interface{}{"b"}},
 
@@ -294,12 +299,12 @@ func (ssgs *selectSQLGeneratorSuite) TestGenerate_withGroupBy() {
 	opts := sqlgen.DefaultDialectOptions()
 	opts.GroupByFragment = []byte(" group by ")
 
-	sc := exp.NewSelectClauses().SetFrom(exp.NewColumnListExpression(nil, "test"))
-	scGroup := sc.SetGroupBy(exp.NewColumnListExpression(nil, "a"))
-	scGroupMulti := sc.SetGroupBy(exp.NewColumnListExpression(nil, "a", "b"))
+	sc := exp.NewSelectClauses().SetFrom(exp.NewColumnListExpression(nil, "db", "test"))
+	scGroup := sc.SetGroupBy(exp.NewColumnListExpression(nil, "db", "a"))
+	scGroupMulti := sc.SetGroupBy(exp.NewColumnListExpression(nil, "db", "a", "b"))
 
 	ssgs.assertCases(
-		sqlgen.NewSelectSQLGenerator("test", opts),
+		sqlgen.NewSelectSQLGenerator("test", "db", opts),
 		selectTestCase{clause: scGroup, sql: `SELECT * FROM "test" group by "a"`},
 		selectTestCase{clause: scGroup, sql: `SELECT * FROM "test" group by "a"`, isPrepared: true},
 
@@ -312,14 +317,14 @@ func (ssgs *selectSQLGeneratorSuite) TestGenerate_withHaving() {
 	opts := sqlgen.DefaultDialectOptions()
 	opts.HavingFragment = []byte(" having ")
 
-	sc := exp.NewSelectClauses().SetFrom(exp.NewColumnListExpression(nil, "test"))
+	sc := exp.NewSelectClauses().SetFrom(exp.NewColumnListExpression(nil, "db", "test"))
 	w := exp.Ex{"a": "b"}
 	w2 := exp.Ex{"b": "c"}
 	scHaving1 := sc.HavingAppend(w)
 	scHaving2 := sc.HavingAppend(w, w2)
 
 	ssgs.assertCases(
-		sqlgen.NewSelectSQLGenerator("test", opts),
+		sqlgen.NewSelectSQLGenerator("test", "db", opts),
 		selectTestCase{clause: scHaving1, sql: `SELECT * FROM "test" having ("a" = 'b')`},
 		selectTestCase{clause: scHaving1, sql: `SELECT * FROM "test" having ("a" = ?)`, isPrepared: true, args: []interface{}{"b"}},
 
@@ -339,8 +344,9 @@ func (ssgs *selectSQLGeneratorSuite) TestGenerate_withWindow() {
 	opts.WindowPartitionByFragment = []byte("partition by ")
 	opts.WindowOrderByFragment = []byte("order by ")
 
-	sc := exp.NewSelectClauses().SetFrom(exp.NewColumnListExpression(nil, "test"))
+	sc := exp.NewSelectClauses().SetFrom(exp.NewColumnListExpression(nil, "db", "test"))
 	we1 := exp.NewWindowExpression(
+		"db",
 		exp.NewIdentifierExpression("", "", "w"),
 		nil,
 		nil,
@@ -352,6 +358,7 @@ func (ssgs *selectSQLGeneratorSuite) TestGenerate_withWindow() {
 	weOrderAndPartitionBy := we1.PartitionBy("a", "b").OrderBy("a", "b")
 
 	weInherits := exp.NewWindowExpression(
+		"db",
 		exp.NewIdentifierExpression("", "", "w2"),
 		exp.NewIdentifierExpression("", "", "w"),
 		nil,
@@ -362,7 +369,7 @@ func (ssgs *selectSQLGeneratorSuite) TestGenerate_withWindow() {
 
 	weInheritsOrderAndPartitionBy := weInherits.PartitionBy("c", "d").OrderBy("c", "d")
 
-	scNoName := sc.WindowsAppend(exp.NewWindowExpression(nil, nil, nil, nil))
+	scNoName := sc.WindowsAppend(exp.NewWindowExpression("db", nil, nil, nil, nil))
 
 	scWindow1 := sc.WindowsAppend(we1)
 	scWindow2 := sc.WindowsAppend(wePartitionBy)
@@ -375,7 +382,7 @@ func (ssgs *selectSQLGeneratorSuite) TestGenerate_withWindow() {
 	scWindow8 := sc.WindowsAppend(we1, weInheritsOrderAndPartitionBy)
 
 	ssgs.assertCases(
-		sqlgen.NewSelectSQLGenerator("test", opts),
+		sqlgen.NewSelectSQLGenerator("test", "db", opts),
 
 		selectTestCase{clause: scNoName, err: sqlgen.ErrNoWindowName.Error()},
 		selectTestCase{clause: scNoName, err: sqlgen.ErrNoWindowName.Error(), isPrepared: true},
@@ -451,7 +458,7 @@ func (ssgs *selectSQLGeneratorSuite) TestGenerate_withWindow() {
 	opts = sqlgen.DefaultDialectOptions()
 	opts.SupportsWindowFunction = false
 	ssgs.assertCases(
-		sqlgen.NewSelectSQLGenerator("test", opts),
+		sqlgen.NewSelectSQLGenerator("test", "db", opts),
 
 		selectTestCase{clause: scWindow1, err: sqlgen.ErrWindowNotSupported("test").Error()},
 		selectTestCase{clause: scWindow1, err: sqlgen.ErrWindowNotSupported("test").Error(), isPrepared: true},
@@ -459,33 +466,33 @@ func (ssgs *selectSQLGeneratorSuite) TestGenerate_withWindow() {
 }
 
 func (ssgs *selectSQLGeneratorSuite) TestGenerate_withOrder() {
-	sc := exp.NewSelectClauses().SetFrom(exp.NewColumnListExpression(nil, "test")).
+	sc := exp.NewSelectClauses().SetFrom(exp.NewColumnListExpression(nil, "db", "test")).
 		SetOrder(
 			exp.NewIdentifierExpression("", "", "a").Asc(),
 			exp.NewIdentifierExpression("", "", "b").Desc(),
 		)
 	ssgs.assertCases(
-		sqlgen.NewSelectSQLGenerator("test", sqlgen.DefaultDialectOptions()),
+		sqlgen.NewSelectSQLGenerator("test", "db", sqlgen.DefaultDialectOptions()),
 		selectTestCase{clause: sc, sql: `SELECT * FROM "test" ORDER BY "a" ASC, "b" DESC`},
 		selectTestCase{clause: sc, sql: `SELECT * FROM "test" ORDER BY "a" ASC, "b" DESC`, isPrepared: true},
 	)
 }
 
 func (ssgs *selectSQLGeneratorSuite) TestGenerate_withLimit() {
-	sc := exp.NewSelectClauses().SetFrom(exp.NewColumnListExpression(nil, "test")).
+	sc := exp.NewSelectClauses().SetFrom(exp.NewColumnListExpression(nil, "db", "test")).
 		SetLimit(10)
 	ssgs.assertCases(
-		sqlgen.NewSelectSQLGenerator("test", sqlgen.DefaultDialectOptions()),
+		sqlgen.NewSelectSQLGenerator("test", "db", sqlgen.DefaultDialectOptions()),
 		selectTestCase{clause: sc, sql: `SELECT * FROM "test" LIMIT 10`},
 		selectTestCase{clause: sc, sql: `SELECT * FROM "test" LIMIT ?`, isPrepared: true, args: []interface{}{int64(10)}},
 	)
 }
 
 func (ssgs *selectSQLGeneratorSuite) TestGenerate_withOffset() {
-	sc := exp.NewSelectClauses().SetFrom(exp.NewColumnListExpression(nil, "test")).
+	sc := exp.NewSelectClauses().SetFrom(exp.NewColumnListExpression(nil, "db", "test")).
 		SetOffset(10)
 	ssgs.assertCases(
-		sqlgen.NewSelectSQLGenerator("test", sqlgen.DefaultDialectOptions()),
+		sqlgen.NewSelectSQLGenerator("test", "db", sqlgen.DefaultDialectOptions()),
 		selectTestCase{clause: sc, sql: `SELECT * FROM "test" OFFSET 10`},
 		selectTestCase{clause: sc, sql: `SELECT * FROM "test" OFFSET ?`, isPrepared: true, args: []interface{}{uint64(10)}},
 	)
@@ -494,12 +501,12 @@ func (ssgs *selectSQLGeneratorSuite) TestGenerate_withOffset() {
 func (ssgs *selectSQLGeneratorSuite) TestGenerate_withCommonTables() {
 	tse := newTestAppendableExpression("select * from foo", emptyArgs, nil, nil)
 
-	sc := exp.NewSelectClauses().SetFrom(exp.NewColumnListExpression(nil, "test_cte"))
+	sc := exp.NewSelectClauses().SetFrom(exp.NewColumnListExpression(nil, "db", "test_cte"))
 	scCte1 := sc.CommonTablesAppend(exp.NewCommonTableExpression(false, "test_cte", tse))
 	scCte2 := sc.CommonTablesAppend(exp.NewCommonTableExpression(true, "test_cte", tse))
 
 	ssgs.assertCases(
-		sqlgen.NewSelectSQLGenerator("test", sqlgen.DefaultDialectOptions()),
+		sqlgen.NewSelectSQLGenerator("test", "db", sqlgen.DefaultDialectOptions()),
 		selectTestCase{clause: scCte1, sql: `WITH test_cte AS (select * from foo) SELECT * FROM "test_cte"`},
 		selectTestCase{clause: scCte1, sql: `WITH test_cte AS (select * from foo) SELECT * FROM "test_cte"`, isPrepared: true},
 
@@ -510,13 +517,13 @@ func (ssgs *selectSQLGeneratorSuite) TestGenerate_withCommonTables() {
 
 func (ssgs *selectSQLGeneratorSuite) TestGenerate_withCompounds() {
 	tse := newTestAppendableExpression("select * from foo", emptyArgs, nil, nil)
-	sc := exp.NewSelectClauses().SetFrom(exp.NewColumnListExpression(nil, "test")).
+	sc := exp.NewSelectClauses().SetFrom(exp.NewColumnListExpression(nil, "db", "test")).
 		CompoundsAppend(exp.NewCompoundExpression(exp.UnionCompoundType, tse)).
 		CompoundsAppend(exp.NewCompoundExpression(exp.IntersectCompoundType, tse))
 
 	expectedSQL := `SELECT * FROM "test" UNION (select * from foo) INTERSECT (select * from foo)`
 	ssgs.assertCases(
-		sqlgen.NewSelectSQLGenerator("test", sqlgen.DefaultDialectOptions()),
+		sqlgen.NewSelectSQLGenerator("test", "db", sqlgen.DefaultDialectOptions()),
 		selectTestCase{clause: sc, sql: expectedSQL},
 		selectTestCase{clause: sc, sql: expectedSQL, isPrepared: true},
 	)
@@ -532,7 +539,7 @@ func (ssgs *selectSQLGeneratorSuite) TestToSelectSQL_withFor() {
 	opts.NowaitFragment = []byte("nowait")
 	opts.SkipLockedFragment = []byte("skip locked")
 
-	sc := exp.NewSelectClauses().SetFrom(exp.NewColumnListExpression(nil, "test"))
+	sc := exp.NewSelectClauses().SetFrom(exp.NewColumnListExpression(nil, "db", "test"))
 	scFnW := sc.SetLock(exp.NewLock(exp.ForNolock, exp.Wait))
 	scFnNw := sc.SetLock(exp.NewLock(exp.ForNolock, exp.NoWait))
 	scFnSl := sc.SetLock(exp.NewLock(exp.ForNolock, exp.SkipLocked))
@@ -556,7 +563,7 @@ func (ssgs *selectSQLGeneratorSuite) TestToSelectSQL_withFor() {
 	scFkuNw := sc.SetLock(exp.NewLock(exp.ForNoKeyUpdate, exp.NoWait))
 	scFkuSl := sc.SetLock(exp.NewLock(exp.ForNoKeyUpdate, exp.SkipLocked))
 	ssgs.assertCases(
-		sqlgen.NewSelectSQLGenerator("test", opts),
+		sqlgen.NewSelectSQLGenerator("test", "db", opts),
 		selectTestCase{clause: scFnW, sql: `SELECT * FROM "test"`},
 		selectTestCase{clause: scFnW, sql: `SELECT * FROM "test"`, isPrepared: true},
 

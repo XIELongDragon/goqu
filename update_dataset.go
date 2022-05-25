@@ -12,22 +12,24 @@ type UpdateDataset struct {
 	clauses      exp.UpdateClauses
 	isPrepared   prepared
 	queryFactory exec.QueryFactory
+	tagName      string
 	err          error
 }
 
 var ErrUnsupportedUpdateTableType = errors.New("unsupported table type, a string or identifier expression is required")
 
 // used internally by database to create a database with a specific adapter
-func newUpdateDataset(d string, queryFactory exec.QueryFactory) *UpdateDataset {
+func newUpdateDataset(d, tagName string, queryFactory exec.QueryFactory) *UpdateDataset {
 	return &UpdateDataset{
 		clauses:      exp.NewUpdateClauses(),
 		dialect:      GetDialect(d),
 		queryFactory: queryFactory,
+		tagName:      tagName,
 	}
 }
 
 func Update(table interface{}) *UpdateDataset {
-	return newUpdateDataset("default", nil).Table(table)
+	return newUpdateDataset("default", "db", nil).Table(table)
 }
 
 // Set the parameter interpolation behavior. See examples
@@ -83,6 +85,7 @@ func (ud *UpdateDataset) copy(clauses exp.UpdateClauses) *UpdateDataset {
 		clauses:      clauses,
 		isPrepared:   ud.isPrepared,
 		queryFactory: ud.queryFactory,
+		tagName:      ud.tagName,
 		err:          ud.err,
 	}
 }
@@ -128,7 +131,7 @@ func (ud *UpdateDataset) Set(values interface{}) *UpdateDataset {
 
 // Allows specifying other tables to reference in your update (If your dialect supports it). See examples.
 func (ud *UpdateDataset) From(tables ...interface{}) *UpdateDataset {
-	return ud.copy(ud.clauses.SetFrom(exp.NewColumnListExpression(nil, tables...)))
+	return ud.copy(ud.clauses.SetFrom(exp.NewColumnListExpression(nil, ud.tagName, tables...)))
 }
 
 // Adds a WHERE clause. See examples.
@@ -183,7 +186,7 @@ func (ud *UpdateDataset) ClearLimit() *UpdateDataset {
 
 // Adds a RETURNING clause to the dataset if the adapter supports it. See examples.
 func (ud *UpdateDataset) Returning(returning ...interface{}) *UpdateDataset {
-	return ud.copy(ud.clauses.SetReturning(exp.NewColumnListExpression(nil, returning...)))
+	return ud.copy(ud.clauses.SetReturning(exp.NewColumnListExpression(nil, ud.tagName, returning...)))
 }
 
 // Get any error that has been set or nil if no error has been set.

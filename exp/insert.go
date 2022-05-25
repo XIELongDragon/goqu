@@ -16,7 +16,7 @@ type (
 	}
 )
 
-func NewInsertExpression(rows ...interface{}) (insertExpression InsertExpression, err error) {
+func NewInsertExpression(tagName string, rows ...interface{}) (insertExpression InsertExpression, err error) {
 	switch len(rows) {
 	case 0:
 		return new(insert), nil
@@ -27,13 +27,13 @@ func NewInsertExpression(rows ...interface{}) (insertExpression InsertExpression
 			for i := 0; i < val.Len(); i++ {
 				vals = append(vals, val.Index(i).Interface())
 			}
-			return NewInsertExpression(vals...)
+			return NewInsertExpression(tagName, vals...)
 		}
 		if ae, ok := rows[0].(AppendableExpression); ok {
 			return &insert{from: ae}, nil
 		}
 	}
-	return newInsert(rows...)
+	return newInsert(tagName, rows...)
 }
 
 func (i *insert) Expression() Expression {
@@ -81,13 +81,13 @@ func (i *insert) SetVals(vals [][]interface{}) InsertExpression {
 }
 
 // parses the rows gathering and sorting unique columns and values for each record
-func newInsert(rows ...interface{}) (insertExp InsertExpression, err error) {
+func newInsert(tagName string, rows ...interface{}) (insertExp InsertExpression, err error) {
 	var mapKeys util.ValueSlice
 	rowValue := reflect.Indirect(reflect.ValueOf(rows[0]))
 	rowType := rowValue.Type()
 	rowKind := rowValue.Kind()
 	if rowKind == reflect.Struct {
-		return createStructSliceInsert(rows...)
+		return createStructSliceInsert(tagName, rows...)
 	}
 	vals := make([][]interface{}, 0, len(rows))
 	var columns ColumnListExpression
@@ -109,7 +109,7 @@ func newInsert(rows ...interface{}) (insertExp InsertExpression, err error) {
 				for _, key := range mapKeys {
 					colKeys = append(colKeys, key.Interface())
 				}
-				columns = NewColumnListExpression(nil, colKeys...)
+				columns = NewColumnListExpression(nil, tagName, colKeys...)
 			}
 			newMapKeys := util.ValueSlice(newRowValue.MapKeys())
 			if len(newMapKeys) != len(mapKeys) {
@@ -133,7 +133,7 @@ func newInsert(rows ...interface{}) (insertExp InsertExpression, err error) {
 	return &insert{cols: columns, vals: vals}, nil
 }
 
-func createStructSliceInsert(rows ...interface{}) (insertExp InsertExpression, err error) {
+func createStructSliceInsert(tagName string, rows ...interface{}) (insertExp InsertExpression, err error) {
 	rowValue := reflect.Indirect(reflect.ValueOf(rows[0]))
 	rowType := rowValue.Type()
 	recordRows := make([]interface{}, 0, len(rows))
@@ -146,18 +146,18 @@ func createStructSliceInsert(rows ...interface{}) (insertExp InsertExpression, e
 			)
 		}
 		newRowValue := reflect.Indirect(reflect.ValueOf(row))
-		record, err := getFieldsValuesFromStruct(newRowValue)
+		record, err := getFieldsValuesFromStruct(tagName, newRowValue)
 		if err != nil {
 			return nil, err
 		}
 		recordRows = append(recordRows, record)
 	}
-	return newInsert(recordRows...)
+	return newInsert(tagName, recordRows...)
 }
 
-func getFieldsValuesFromStruct(value reflect.Value) (row Record, err error) {
+func getFieldsValuesFromStruct(tagName string, value reflect.Value) (row Record, err error) {
 	if value.IsValid() {
-		return NewRecordFromStruct(value.Interface(), true, false)
+		return NewRecordFromStruct(value.Interface(), true, false, tagName)
 	}
 	return
 }

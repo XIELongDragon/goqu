@@ -21,11 +21,16 @@ import (
 
 type DialectWrapper struct {
 	dialect string
+	tagName string
 }
 
 // Creates a new DialectWrapper to create goqu.Datasets or goqu.Databases with the specified dialect.
 func Dialect(dialect string) DialectWrapper {
-	return DialectWrapper{dialect: dialect}
+	return DialectWithTagName(dialect, "db")
+}
+
+func DialectWithTagName(dialect string, tagName string) DialectWrapper {
+	return DialectWrapper{dialect: dialect, tagName: tagName}
 }
 
 // Create a new dataset for creating SELECT sql statements
@@ -35,7 +40,7 @@ func (dw DialectWrapper) From(table ...interface{}) *SelectDataset {
 
 // Create a new dataset for creating SELECT sql statements
 func (dw DialectWrapper) Select(cols ...interface{}) *SelectDataset {
-	return newDataset(dw.dialect, nil).Select(cols...)
+	return newDataset(dw.dialect, dw.tagName, nil).Select(cols...)
 }
 
 // Create a new dataset for creating UPDATE sql statements
@@ -59,11 +64,15 @@ func (dw DialectWrapper) Truncate(table ...interface{}) *TruncateDataset {
 }
 
 func (dw DialectWrapper) DB(db SQLDatabase) *Database {
-	return newDatabase(dw.dialect, db)
+	return newDatabase(dw.dialect, dw.tagName, db)
 }
 
 func New(dialect string, db SQLDatabase) *Database {
-	return newDatabase(dialect, db)
+	return newDatabase(dialect, "db", db)
+}
+
+func NewWithTagName(dialect string, tagName string, db SQLDatabase) *Database {
+	return newDatabase(dialect, tagName, db)
 }
 
 // Set the behavior when encountering struct fields that do not have a db tag.

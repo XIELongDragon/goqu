@@ -134,7 +134,7 @@ func (ucs *updateClausesSuite) TestOrder() {
 
 	ucs.Nil(c.Order())
 
-	ucs.Equal(exp.NewColumnListExpression(nil, oe), c2.Order())
+	ucs.Equal(exp.NewColumnListExpression(nil, "db", oe), c2.Order())
 }
 
 func (ucs *updateClausesSuite) TestHasOrder() {
@@ -154,7 +154,7 @@ func (ucs *updateClausesSuite) TestClearOrder() {
 	c := exp.NewUpdateClauses().SetOrder(oe)
 	c2 := c.ClearOrder()
 
-	ucs.Equal(exp.NewColumnListExpression(nil, oe), c.Order())
+	ucs.Equal(exp.NewColumnListExpression(nil, "db", oe), c.Order())
 
 	ucs.Nil(c2.Order())
 }
@@ -166,9 +166,9 @@ func (ucs *updateClausesSuite) TestSetOrder() {
 	c := exp.NewUpdateClauses().SetOrder(oe)
 	c2 := c.SetOrder(oe2)
 
-	ucs.Equal(exp.NewColumnListExpression(nil, oe), c.Order())
+	ucs.Equal(exp.NewColumnListExpression(nil, "db", oe), c.Order())
 
-	ucs.Equal(exp.NewColumnListExpression(nil, oe2), c2.Order())
+	ucs.Equal(exp.NewColumnListExpression(nil, "db", oe2), c2.Order())
 }
 
 func (ucs *updateClausesSuite) TestOrderAppend() {
@@ -178,9 +178,9 @@ func (ucs *updateClausesSuite) TestOrderAppend() {
 	c := exp.NewUpdateClauses().SetOrder(oe)
 	c2 := c.OrderAppend(oe2)
 
-	ucs.Equal(exp.NewColumnListExpression(nil, oe), c.Order())
+	ucs.Equal(exp.NewColumnListExpression(nil, "db", oe), c.Order())
 
-	ucs.Equal(exp.NewColumnListExpression(nil, oe, oe2), c2.Order())
+	ucs.Equal(exp.NewColumnListExpression(nil, "db", oe, oe2), c2.Order())
 }
 
 func (ucs *updateClausesSuite) TestOrderPrepend() {
@@ -190,9 +190,9 @@ func (ucs *updateClausesSuite) TestOrderPrepend() {
 	c := exp.NewUpdateClauses().SetOrder(oe)
 	c2 := c.OrderPrepend(oe2)
 
-	ucs.Equal(exp.NewColumnListExpression(nil, oe), c.Order())
+	ucs.Equal(exp.NewColumnListExpression(nil, "db", oe), c.Order())
 
-	ucs.Equal(exp.NewColumnListExpression(nil, oe2, oe), c2.Order())
+	ucs.Equal(exp.NewColumnListExpression(nil, "db", oe2, oe), c2.Order())
 }
 
 func (ucs *updateClausesSuite) TestLimit() {
@@ -264,7 +264,7 @@ func (ucs *updateClausesSuite) TestAddCommonTablesAppend() {
 }
 
 func (ucs *updateClausesSuite) TestReturning() {
-	cl := exp.NewColumnListExpression(nil, exp.NewIdentifierExpression("", "", "col"))
+	cl := exp.NewColumnListExpression(nil, "db", exp.NewIdentifierExpression("", "", "col"))
 
 	c := exp.NewUpdateClauses()
 	c2 := c.SetReturning(cl)
@@ -275,7 +275,7 @@ func (ucs *updateClausesSuite) TestReturning() {
 }
 
 func (ucs *updateClausesSuite) TestHasReturning() {
-	cl := exp.NewColumnListExpression(nil, exp.NewIdentifierExpression("", "", "col"))
+	cl := exp.NewColumnListExpression(nil, "db", exp.NewIdentifierExpression("", "", "col"))
 
 	c := exp.NewUpdateClauses()
 	c2 := c.SetReturning(cl)
@@ -286,8 +286,8 @@ func (ucs *updateClausesSuite) TestHasReturning() {
 }
 
 func (ucs *updateClausesSuite) TestSetReturning() {
-	cl := exp.NewColumnListExpression(nil, exp.NewIdentifierExpression("", "", "col"))
-	cl2 := exp.NewColumnListExpression(nil, exp.NewIdentifierExpression("", "", "col2"))
+	cl := exp.NewColumnListExpression(nil, "db", exp.NewIdentifierExpression("", "", "col"))
+	cl2 := exp.NewColumnListExpression(nil, "db", exp.NewIdentifierExpression("", "", "col2"))
 
 	c := exp.NewUpdateClauses().SetReturning(cl)
 	c2 := c.SetReturning(cl2)

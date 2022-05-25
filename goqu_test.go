@@ -17,7 +17,7 @@ type (
 func (dws *dialectWrapperSuite) SetupSuite() {
 	testDialect := goqu.DefaultDialectOptions()
 	// override to some value to ensure correct dialect is set
-	goqu.RegisterDialect("test", testDialect)
+	goqu.RegisterDialect("test", "db", testDialect)
 }
 
 func (dws *dialectWrapperSuite) TearDownSuite() {

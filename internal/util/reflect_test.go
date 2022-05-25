@@ -385,7 +385,7 @@ func (rt *reflectTest) TestColumnRename() {
 		FirstLower string
 		LastLower  string
 	}{}
-	lowerColumnMap, lowerErr := util.GetColumnMap(&lowerAnon)
+	lowerColumnMap, lowerErr := util.GetColumnMap(&lowerAnon, "db")
 	rt.NoError(lowerErr)
 
 	lowerKeys := make([]string, 0, len(lowerColumnMap))
@@ -402,7 +402,7 @@ func (rt *reflectTest) TestColumnRename() {
 		FirstUpper string
 		LastUpper  string
 	}{}
-	upperColumnMap, upperErr := util.GetColumnMap(&upperAnon)
+	upperColumnMap, upperErr := util.GetColumnMap(&upperAnon, "db")
 	rt.NoError(upperErr)
 
 	upperKeys := make([]string, 0, len(upperColumnMap))
@@ -426,7 +426,7 @@ func (rt *reflectTest) TestParallelGetColumnMap() {
 	wg.Add(1)
 	go func() {
 		i := item{id: 1, name: "bob"}
-		m, err := util.GetColumnMap(i)
+		m, err := util.GetColumnMap(i, "db")
 		rt.NoError(err)
 		rt.NotNil(m)
 		wg.Done()
@@ -435,7 +435,7 @@ func (rt *reflectTest) TestParallelGetColumnMap() {
 	wg.Add(1)
 	go func() {
 		i := item{id: 2, name: "sally"}
-		m, err := util.GetColumnMap(i)
+		m, err := util.GetColumnMap(i, "db")
 		rt.NoError(err)
 		rt.NotNil(m)
 		wg.Done()
@@ -452,7 +452,7 @@ func (rt *reflectTest) TestAssignStructVals_withStruct() {
 		Valuer sql.NullString
 	}
 	var ts TestStruct
-	cm, err := util.GetColumnMap(&ts)
+	cm, err := util.GetColumnMap(&ts, "db")
 	rt.NoError(err)
 	data := map[string]interface{}{
 		"str":    "string",
@@ -478,7 +478,7 @@ func (rt *reflectTest) TestAssignStructVals_withStructWithPointerVals() {
 		Valuer *sql.NullString
 	}
 	var ts TestStruct
-	cm, err := util.GetColumnMap(&ts)
+	cm, err := util.GetColumnMap(&ts, "db")
 	rt.NoError(err)
 	ns := &sql.NullString{String: "null_str1", Valid: true}
 	data := map[string]interface{}{
@@ -507,7 +507,7 @@ func (rt *reflectTest) TestAssignStructVals_withStructWithEmbeddedStruct() {
 		Valuer *sql.NullString
 	}
 	var ts TestStruct
-	cm, err := util.GetColumnMap(&ts)
+	cm, err := util.GetColumnMap(&ts, "db")
 	rt.NoError(err)
 	ns := &sql.NullString{String: "null_str1", Valid: true}
 	data := map[string]interface{}{
@@ -536,7 +536,7 @@ func (rt *reflectTest) TestAssignStructVals_withStructWithEmbeddedStructPointer(
 		Valuer *sql.NullString
 	}
 	var ts TestStruct
-	cm, err := util.GetColumnMap(&ts)
+	cm, err := util.GetColumnMap(&ts, "db")
 	rt.NoError(err)
 	ns := &sql.NullString{String: "null_str1", Valid: true}
 	data := map[string]interface{}{
@@ -565,7 +565,7 @@ func (rt *reflectTest) TestAssignStructVals_withStructWithTaggedEmbeddedStruct()
 		Valuer         *sql.NullString
 	}
 	var ts TestStruct
-	cm, err := util.GetColumnMap(&ts)
+	cm, err := util.GetColumnMap(&ts, "db")
 	rt.NoError(err)
 	ns := &sql.NullString{String: "null_str1", Valid: true}
 	data := map[string]interface{}{
@@ -594,7 +594,7 @@ func (rt *reflectTest) TestAssignStructVals_withStructWithTaggedEmbeddedPointer(
 		Valuer          *sql.NullString
 	}
 	var ts TestStruct
-	cm, err := util.GetColumnMap(&ts)
+	cm, err := util.GetColumnMap(&ts, "db")
 	rt.NoError(err)
 	ns := &sql.NullString{String: "null_str1", Valid: true}
 	data := map[string]interface{}{
@@ -623,7 +623,7 @@ func (rt *reflectTest) TestAssignStructVals_withStructWithTaggedStructField() {
 		Valuer   *sql.NullString
 	}
 	var ts TestStruct
-	cm, err := util.GetColumnMap(&ts)
+	cm, err := util.GetColumnMap(&ts, "db")
 	rt.NoError(err)
 	ns := &sql.NullString{String: "null_str1", Valid: true}
 	data := map[string]interface{}{
@@ -652,7 +652,7 @@ func (rt *reflectTest) TestAssignStructVals_withStructWithTaggedPointerField() {
 		Valuer   *sql.NullString
 	}
 	var ts TestStruct
-	cm, err := util.GetColumnMap(&ts)
+	cm, err := util.GetColumnMap(&ts, "db")
 	rt.NoError(err)
 	ns := &sql.NullString{String: "null_str1", Valid: true}
 	data := map[string]interface{}{
@@ -678,7 +678,7 @@ func (rt *reflectTest) TestGetColumnMap_withStruct() {
 		Valuer *sql.NullString
 	}
 	var ts TestStruct
-	cm, err := util.GetColumnMap(&ts)
+	cm, err := util.GetColumnMap(&ts, "db")
 	rt.NoError(err)
 	rt.Equal(util.ColumnMap{
 		"str":    {ColumnName: "str", FieldIndex: []int{0}, ShouldInsert: true, ShouldUpdate: true, GoType: reflect.TypeOf("")},
@@ -697,7 +697,7 @@ func (rt *reflectTest) TestGetColumnMap_withStructGoquTags() {
 		Valuer *sql.NullString
 	}
 	var ts TestStruct
-	cm, err := util.GetColumnMap(&ts)
+	cm, err := util.GetColumnMap(&ts, "db")
 	rt.NoError(err)
 	rt.Equal(util.ColumnMap{
 		"str":  {ColumnName: "str", FieldIndex: []int{0}, ShouldInsert: false, ShouldUpdate: false, GoType: reflect.TypeOf("")},
@@ -731,7 +731,7 @@ func (rt *reflectTest) TestGetColumnMap_withStructWithIgnoreUntagged() {
 		Bool bool   // Ignored
 	}
 	var ts TestStruct
-	cm, err := util.GetColumnMap(&ts)
+	cm, err := util.GetColumnMap(&ts, "db")
 	rt.NoError(err)
 	rt.Equal(util.ColumnMap{
 		"f": {ColumnName: "f", FieldIndex: []int{0, 0}, ShouldInsert: true, ShouldUpdate: true, GoType: reflect.TypeOf(float64(1))},
@@ -749,7 +749,7 @@ func (rt *reflectTest) TestGetColumnMap_withStructWithTag() {
 		Ignored string          `db:"-"`
 	}
 	var ts TestStruct
-	cm, err := util.GetColumnMap(&ts)
+	cm, err := util.GetColumnMap(&ts, "db")
 	rt.NoError(err)
 	rt.Equal(util.ColumnMap{
 		"s": {ColumnName: "s", FieldIndex: []int{0}, ShouldInsert: true, ShouldUpdate: true, GoType: reflect.TypeOf("")},
@@ -767,7 +767,7 @@ func (rt *reflectTest) TestGetColumnMap_withStructWithTagAndGoquTag() {
 		Valuer *sql.NullString `db:"v"`
 	}
 	var ts TestStruct
-	cm, err := util.GetColumnMap(&ts)
+	cm, err := util.GetColumnMap(&ts, "db")
 	rt.NoError(err)
 	rt.Equal(util.ColumnMap{
 		"s": {ColumnName: "s", FieldIndex: []int{0}, ShouldInsert: false, ShouldUpdate: false, GoType: reflect.TypeOf("")},
@@ -785,7 +785,7 @@ func (rt *reflectTest) TestGetColumnMap_withStructWithTransientFields() {
 		Valuer *sql.NullString `db:"-"`
 	}
 	var ts TestStruct
-	cm, err := util.GetColumnMap(&ts)
+	cm, err := util.GetColumnMap(&ts, "db")
 	rt.NoError(err)
 	rt.Equal(util.ColumnMap{
 		"str":  {ColumnName: "str", FieldIndex: []int{0}, ShouldInsert: true, ShouldUpdate: true, GoType: reflect.TypeOf("")},
@@ -802,7 +802,7 @@ func (rt *reflectTest) TestGetColumnMap_withSliceOfStructs() {
 		Valuer *sql.NullString
 	}
 	var ts []TestStruct
-	cm, err := util.GetColumnMap(&ts)
+	cm, err := util.GetColumnMap(&ts, "db")
 	rt.NoError(err)
 	rt.Equal(util.ColumnMap{
 		"str":    {ColumnName: "str", FieldIndex: []int{0}, ShouldInsert: true, ShouldUpdate: true, GoType: reflect.TypeOf("")},
@@ -814,7 +814,7 @@ func (rt *reflectTest) TestGetColumnMap_withSliceOfStructs() {
 
 func (rt *reflectTest) TestGetColumnMap_withNonStruct() {
 	var v int64
-	_, err := util.GetColumnMap(&v)
+	_, err := util.GetColumnMap(&v, "db")
 	rt.EqualError(err, "goqu: cannot scan into this type: int64")
 }
 
@@ -829,7 +829,7 @@ func (rt *reflectTest) TestGetColumnMap_withStructWithEmbeddedStruct() {
 		Valuer *sql.NullString
 	}
 	var ts TestStruct
-	cm, err := util.GetColumnMap(&ts)
+	cm, err := util.GetColumnMap(&ts, "db")
 	rt.NoError(err)
 	rt.Equal(util.ColumnMap{
 		"str":    {ColumnName: "str", FieldIndex: []int{0, 0}, ShouldInsert: true, ShouldUpdate: true, GoType: reflect.TypeOf("")},
@@ -850,7 +850,7 @@ func (rt *reflectTest) TestGetColumnMap_withStructWithEmbeddedStructPointer() {
 		Valuer *sql.NullString
 	}
 	var ts TestStruct
-	cm, err := util.GetColumnMap(&ts)
+	cm, err := util.GetColumnMap(&ts, "db")
 	rt.NoError(err)
 	rt.Equal(util.ColumnMap{
 		"str":    {ColumnName: "str", FieldIndex: []int{0, 0}, ShouldInsert: true, ShouldUpdate: true, GoType: reflect.TypeOf("")},
@@ -871,7 +871,7 @@ func (rt *reflectTest) TestGetColumnMap_withIgnoredEmbeddedStruct() {
 		Valuer         *sql.NullString
 	}
 	var ts TestStruct
-	cm, err := util.GetColumnMap(&ts)
+	cm, err := util.GetColumnMap(&ts, "db")
 	rt.NoError(err)
 	rt.Equal(util.ColumnMap{
 		"int":    {ColumnName: "int", FieldIndex: []int{1}, ShouldInsert: true, ShouldUpdate: true, GoType: reflect.TypeOf(int64(1))},
@@ -891,7 +891,7 @@ func (rt *reflectTest) TestGetColumnMap_withIgnoredEmbeddedPointerStruct() {
 		Valuer          *sql.NullString
 	}
 	var ts TestStruct
-	cm, err := util.GetColumnMap(&ts)
+	cm, err := util.GetColumnMap(&ts, "db")
 	rt.NoError(err)
 	rt.Equal(util.ColumnMap{
 		"int":    {ColumnName: "int", FieldIndex: []int{1}, ShouldInsert: true, ShouldUpdate: true, GoType: reflect.TypeOf(int64(1))},
@@ -908,7 +908,7 @@ func (rt *reflectTest) TestGetColumnMap_withPrivateFields() {
 		Valuer *sql.NullString
 	}
 	var ts TestStruct
-	cm, err := util.GetColumnMap(&ts)
+	cm, err := util.GetColumnMap(&ts, "db")
 	rt.NoError(err)
 	rt.Equal(util.ColumnMap{
 		"int":    {ColumnName: "int", FieldIndex: []int{1}, ShouldInsert: true, ShouldUpdate: true, GoType: reflect.TypeOf(int64(1))},
@@ -929,7 +929,7 @@ func (rt *reflectTest) TestGetColumnMap_withPrivateEmbeddedFields() {
 		Valuer *sql.NullString
 	}
 	var ts TestStruct
-	cm, err := util.GetColumnMap(&ts)
+	cm, err := util.GetColumnMap(&ts, "db")
 	rt.NoError(err)
 	rt.Equal(util.ColumnMap{
 		"int":    {ColumnName: "int", FieldIndex: []int{0, 1}, ShouldInsert: true, ShouldUpdate: true, GoType: reflect.TypeOf(int64(1))},
@@ -950,7 +950,7 @@ func (rt *reflectTest) TestGetColumnMap_withEmbeddedTaggedStruct() {
 		Valuer       *sql.NullString
 	}
 	var ts TestStruct
-	cm, err := util.GetColumnMap(&ts)
+	cm, err := util.GetColumnMap(&ts, "db")
 	rt.NoError(err)
 	rt.Equal(util.ColumnMap{
 		"test_embedded.bool": {
@@ -996,7 +996,7 @@ func (rt *reflectTest) TestGetColumnMap_withEmbeddedTaggedStructPointer() {
 		Valuer        *sql.NullString
 	}
 	var ts TestStruct
-	cm, err := util.GetColumnMap(&ts)
+	cm, err := util.GetColumnMap(&ts, "db")
 	rt.NoError(err)
 	rt.Equal(util.ColumnMap{
 		"test_embedded.bool": {
@@ -1041,7 +1041,7 @@ func (rt *reflectTest) TestGetColumnMap_withTaggedStructField() {
 		Valuer   *sql.NullString
 	}
 	var ts TestStruct
-	cm, err := util.GetColumnMap(&ts)
+	cm, err := util.GetColumnMap(&ts, "db")
 	rt.NoError(err)
 	rt.Equal(util.ColumnMap{
 		"test_embedded.bool": {
@@ -1087,7 +1087,7 @@ func (rt *reflectTest) TestGetColumnMap_withTaggedStructPointerField() {
 		Valuer   *sql.NullString
 	}
 	var ts TestStruct
-	cm, err := util.GetColumnMap(&ts)
+	cm, err := util.GetColumnMap(&ts, "db")
 	rt.NoError(err)
 	rt.Equal(util.ColumnMap{
 		"test_embedded.bool": {

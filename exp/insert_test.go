@@ -42,11 +42,13 @@ func (iets *insertExpressionTestSuite) TestNewInsertExpression_withDifferentReco
 		C string `db:"c"`
 	}
 	_, err := exp.NewInsertExpression(
+		"db",
 		testRecord{C: "v1"},
 		exp.Record{"c": "v2"},
 	)
 	iets.EqualError(err, "goqu: rows must be all the same type expected exp_test.testRecord got exp.Record")
 	_, err = exp.NewInsertExpression(
+		"",
 		testRecord{C: "v1"},
 		testRecord2{C: "v2"},
 	)
@@ -54,17 +56,17 @@ func (iets *insertExpressionTestSuite) TestNewInsertExpression_withDifferentReco
 }
 
 func (iets *insertExpressionTestSuite) TestNewInsertExpression_withInvalidValue() {
-	_, err := exp.NewInsertExpression(true)
+	_, err := exp.NewInsertExpression("db", true)
 	iets.EqualError(err, "goqu: unsupported insert must be map, goqu.Record, or struct type got: bool")
 }
 
 func (iets *insertExpressionTestSuite) TestNewInsertExpression_withDifferentTypes() {
-	_, err := exp.NewInsertExpression(exp.Record{"a": "a1"}, true)
+	_, err := exp.NewInsertExpression("db", exp.Record{"a": "a1"}, true)
 	iets.EqualError(err, "goqu: rows must be all the same type expected exp.Record got bool")
 }
 
 func (iets *insertExpressionTestSuite) TestNewInsertExpression_withNoValues() {
-	ie, err := exp.NewInsertExpression()
+	ie, err := exp.NewInsertExpression("db")
 	iets.NoError(err)
 	iets.Nil(ie.Cols())
 	iets.Nil(ie.Vals())
@@ -73,7 +75,7 @@ func (iets *insertExpressionTestSuite) TestNewInsertExpression_withNoValues() {
 }
 
 func (iets *insertExpressionTestSuite) TestNewInsertExpression_Vals() {
-	ie, err := exp.NewInsertExpression()
+	ie, err := exp.NewInsertExpression("db")
 	iets.NoError(err)
 	vals := [][]interface{}{
 		{"a", "b"},
@@ -85,7 +87,7 @@ func (iets *insertExpressionTestSuite) TestNewInsertExpression_Vals() {
 }
 
 func (iets *insertExpressionTestSuite) TestNewInsertExpression_Cols() {
-	ie, err := exp.NewInsertExpression()
+	ie, err := exp.NewInsertExpression("db")
 	iets.NoError(err)
 	vals := [][]interface{}{
 		{"a", "b"},
@@ -100,7 +102,7 @@ func (iets *insertExpressionTestSuite) TestNewInsertExpression_Cols() {
 
 func (iets *insertExpressionTestSuite) TestNewInsertExpression_From() {
 	ae := newTestAppendableExpression("select * from test", []interface{}{})
-	ie, err := exp.NewInsertExpression(ae)
+	ie, err := exp.NewInsertExpression("db", ae)
 	iets.NoError(err)
 	iets.False(ie.IsEmpty())
 	iets.True(ie.IsInsertFrom())
@@ -110,14 +112,14 @@ func (iets *insertExpressionTestSuite) TestNewInsertExpression_From() {
 func (iets *insertExpressionTestSuite) TestNewInsertExpression_appendableExpression() {
 	ae := newTestAppendableExpression("test ae", nil)
 
-	ie, err := exp.NewInsertExpression(ae)
+	ie, err := exp.NewInsertExpression("db", ae)
 	iets.NoError(err)
 	iets.False(ie.IsEmpty())
 	iets.True(ie.IsInsertFrom())
 }
 
 func (iets *insertExpressionTestSuite) TestNewInsertExpression_withRecords() {
-	ie, err := exp.NewInsertExpression(exp.Record{"c": "a"}, exp.Record{"c": "b"})
+	ie, err := exp.NewInsertExpression("db", exp.Record{"c": "a"}, exp.Record{"c": "b"})
 	iets.NoError(err)
 	iets.Equal(exp.NewColumnListExpression(nil, "c"), ie.Cols())
 	iets.Equal([][]interface{}{{"a"}, {"b"}}, ie.Vals())
@@ -126,7 +128,7 @@ func (iets *insertExpressionTestSuite) TestNewInsertExpression_withRecords() {
 }
 
 func (iets *insertExpressionTestSuite) TestNewInsertExpression_withRecordsSlice() {
-	ie, err := exp.NewInsertExpression([]exp.Record{{"c": "a"}, {"c": "b"}})
+	ie, err := exp.NewInsertExpression("db", []exp.Record{{"c": "a"}, {"c": "b"}})
 	iets.NoError(err)
 	iets.Equal(exp.NewColumnListExpression(nil, "c"), ie.Cols())
 	iets.Equal([][]interface{}{{"a"}, {"b"}}, ie.Vals())
@@ -135,17 +137,18 @@ func (iets *insertExpressionTestSuite) TestNewInsertExpression_withRecordsSlice(
 }
 
 func (iets *insertExpressionTestSuite) TestNewInsertExpression_withRecordOfDifferentLength() {
-	_, err := exp.NewInsertExpression(exp.Record{"c": "a"}, exp.Record{"c": "b", "c2": "d"})
+	_, err := exp.NewInsertExpression("db", exp.Record{"c": "a"}, exp.Record{"c": "b", "c2": "d"})
 	iets.EqualError(err, "goqu: rows with different value length expected 1 got 2")
 }
 
 func (iets *insertExpressionTestSuite) TestNewInsertExpression_withRecordWithDifferentkeys() {
-	_, err := exp.NewInsertExpression(exp.Record{"c1": "a"}, exp.Record{"c2": "b"})
+	_, err := exp.NewInsertExpression("db", exp.Record{"c1": "a"}, exp.Record{"c2": "b"})
 	iets.EqualError(err, `goqu: rows with different keys expected ["c1"] got ["c2"]`)
 }
 
 func (iets *insertExpressionTestSuite) TestNewInsertExpression_withMap() {
 	ie, err := exp.NewInsertExpression(
+		"db",
 		map[string]interface{}{"c": "a"},
 		map[string]interface{}{"c": "b"},
 	)
@@ -161,6 +164,7 @@ func (iets *insertExpressionTestSuite) TestNewInsertExpression_withStructs() {
 		C string `db:"c"`
 	}
 	ie, err := exp.NewInsertExpression(
+		"db",
 		testRecord{C: "a"},
 		testRecord{C: "b"},
 	)
@@ -175,7 +179,7 @@ func (iets *insertExpressionTestSuite) TestNewInsertExpression_withStructSlice()
 	type testRecord struct {
 		C string `db:"c"`
 	}
-	ie, err := exp.NewInsertExpression([]testRecord{
+	ie, err := exp.NewInsertExpression("db", []testRecord{
 		{C: "a"},
 		{C: "b"},
 	})
@@ -193,6 +197,7 @@ func (iets *insertExpressionTestSuite) TestNewInsertExpression_withStructsWithou
 		FieldC string
 	}
 	ie, err := exp.NewInsertExpression(
+		"db",
 		testRecord{FieldA: 1, FieldB: true, FieldC: "a"},
 		testRecord{FieldA: 2, FieldB: false, FieldC: "b"},
 	)
@@ -210,6 +215,7 @@ func (iets *insertExpressionTestSuite) TestNewInsertExpression_withStructsIgnore
 		FieldC string
 	}
 	ie, err := exp.NewInsertExpression(
+		"db",
 		testRecord{FieldA: 1, FieldB: true, FieldC: "a"},
 		testRecord{FieldA: 2, FieldB: false, FieldC: "b"},
 	)
@@ -227,6 +233,7 @@ func (iets *insertExpressionTestSuite) TestNewInsertExpression_withStructsWithGo
 		FieldC string `goqu:"skipinsert"`
 	}
 	ie, err := exp.NewInsertExpression(
+		"db",
 		testRecord{FieldA: 1, FieldB: true, FieldC: "a"},
 		testRecord{FieldA: 2, FieldB: false, FieldC: "b"},
 	)
@@ -242,6 +249,7 @@ func (iets *insertExpressionTestSuite) TestNewInsertExpression_withStructPointer
 		C string `db:"c"`
 	}
 	ie, err := exp.NewInsertExpression(
+		"db",
 		&testRecord{C: "a"},
 		&testRecord{C: "b"},
 	)
@@ -263,6 +271,7 @@ func (iets *insertExpressionTestSuite) TestNewInsertExpression_withStructsWithEm
 		Name    string `db:"name"`
 	}
 	ie, err := exp.NewInsertExpression(
+		"db",
 		item{Address: "111 Test Addr", Name: "Test1", Phone: Phone{Home: "123123", Primary: "456456"}},
 		item{Address: "211 Test Addr", Name: "Test2", Phone: Phone{Home: "123123", Primary: "456456"}},
 		item{Address: "311 Test Addr", Name: "Test3", Phone: Phone{Home: "123123", Primary: "456456"}},
@@ -291,6 +300,7 @@ func (iets *insertExpressionTestSuite) TestNewInsertExpression_withStructsWithEm
 		Name    string `db:"name"`
 	}
 	ie, err := exp.NewInsertExpression(
+		"db",
 		item{Address: "111 Test Addr", Name: "Test1", Phone: &Phone{Home: "123123", Primary: "456456"}},
 		item{Address: "211 Test Addr", Name: "Test2", Phone: &Phone{Home: "123123", Primary: "456456"}},
 		item{Address: "311 Test Addr", Name: "Test3", Phone: &Phone{Home: "123123", Primary: "456456"}},
@@ -319,6 +329,7 @@ func (iets *insertExpressionTestSuite) TestNewInsertExpression_withNilEmbeddedSt
 		Name    string `db:"name"`
 	}
 	ie, err := exp.NewInsertExpression(
+		"db",
 		item{Address: "111 Test Addr", Name: "Test1"},
 		item{Address: "211 Test Addr", Name: "Test2"},
 		item{Address: "311 Test Addr", Name: "Test3"},
@@ -347,6 +358,7 @@ func (iets *insertExpressionTestSuite) TestNewInsertExpression_withDifferentStru
 		Name    string `db:"name"`
 	}
 	_, err := exp.NewInsertExpression(
+		"db",
 		item{Address: "111 Test Addr", Name: "Test1"},
 		Phone{Home: "123123", Primary: "456456"},
 		item{Address: "311 Test Addr", Name: "Test3"},
@@ -371,6 +383,7 @@ func (iets *insertExpressionTestSuite) TestNewInsertExpression_withDifferentColu
 		Name    string `db:"name"`
 	}
 	_, err := exp.NewInsertExpression(
+		"db",
 		item{Address: "111 Test Addr", Name: "Test1", Phone2: &Phone2{Home: "123123", Primary: "456456"}},
 		item{Address: "311 Test Addr", Name: "Test3", Phone: &Phone{Home: "123123", Primary: "456456"}},
 	)

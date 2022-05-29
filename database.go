@@ -85,7 +85,7 @@ func (d *Database) Begin() (*TxDatabase, error) {
 	if err != nil {
 		return nil, err
 	}
-	tx := NewTx(d.dialect, sqlTx)
+	tx := NewTxWithTagName(d.dialect, d.tagName, sqlTx)
 	tx.Logger(d.logger)
 	return tx, nil
 }
@@ -96,7 +96,7 @@ func (d *Database) BeginTx(ctx context.Context, opts *sql.TxOptions) (*TxDatabas
 	if err != nil {
 		return nil, err
 	}
-	tx := NewTx(d.dialect, sqlTx)
+	tx := NewTxWithTagName(d.dialect, d.tagName, sqlTx)
 	tx.Logger(d.logger)
 	return tx, nil
 }

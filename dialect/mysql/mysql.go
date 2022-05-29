@@ -1,6 +1,8 @@
 package mysql
 
 import (
+	"time"
+
 	"github.com/doug-martin/goqu/v9"
 	"github.com/doug-martin/goqu/v9/exp"
 )
@@ -84,6 +86,7 @@ func DialectOptions() *goqu.SQLDialectOptions {
 func DialectOptionsV8() *goqu.SQLDialectOptions {
 	opts := DialectOptions()
 	opts.SupportsWindowFunction = true
+	opts.TimeFormat = time.RFC3339Nano
 	return opts
 }
 

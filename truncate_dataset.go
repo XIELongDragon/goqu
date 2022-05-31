@@ -19,7 +19,7 @@ type TruncateDataset struct {
 func newTruncateDataset(d, tagName string, queryFactory exec.QueryFactory) *TruncateDataset {
 	return &TruncateDataset{
 		clauses:      exp.NewTruncateClauses(),
-		dialect:      GetDialect(d),
+		dialect:      GetDialectWithTag(d, tagName),
 		tagName:      tagName,
 		queryFactory: queryFactory,
 	}
@@ -32,7 +32,7 @@ func Truncate(table ...interface{}) *TruncateDataset {
 // Sets the adapter used to serialize values and create the SQL statement
 func (td *TruncateDataset) WithDialect(dl string) *TruncateDataset {
 	ds := td.copy(td.GetClauses())
-	ds.dialect = GetDialect(dl)
+	ds.dialect = GetDialectWithTag(dl, td.tagName)
 	return ds
 }
 

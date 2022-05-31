@@ -24,7 +24,7 @@ var ErrUnsupportedIntoType = errors.New("unsupported table type, a string or ide
 func newInsertDataset(d, tagName string, queryFactory exec.QueryFactory) *InsertDataset {
 	return &InsertDataset{
 		clauses:      exp.NewInsertClauses(),
-		dialect:      GetDialect(d),
+		dialect:      GetDialectWithTag(d, tagName),
 		queryFactory: queryFactory,
 		tagName:      tagName,
 	}
@@ -52,7 +52,7 @@ func (id *InsertDataset) IsPrepared() bool {
 // Sets the adapter used to serialize values and create the SQL statement
 func (id *InsertDataset) WithDialect(dl string) *InsertDataset {
 	ds := id.copy(id.GetClauses())
-	ds.dialect = GetDialect(dl)
+	ds.dialect = GetDialectWithTag(dl, id.tagName)
 	return ds
 }
 

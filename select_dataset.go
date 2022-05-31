@@ -29,7 +29,7 @@ var ErrQueryFactoryNotFoundError = errors.New(
 func newDataset(d, tagName string, queryFactory exec.QueryFactory) *SelectDataset {
 	return &SelectDataset{
 		clauses:      exp.NewSelectClauses(),
-		dialect:      GetDialect(d),
+		dialect:      GetDialectWithTag(d, tagName),
 		queryFactory: queryFactory,
 		tagName:      tagName,
 	}
@@ -46,7 +46,7 @@ func Select(cols ...interface{}) *SelectDataset {
 // Sets the adapter used to serialize values and create the SQL statement
 func (sd *SelectDataset) WithDialect(dl string) *SelectDataset {
 	ds := sd.copy(sd.GetClauses())
-	ds.dialect = GetDialect(dl)
+	ds.dialect = GetDialectWithTag(dl, sd.tagName)
 	return ds
 }
 

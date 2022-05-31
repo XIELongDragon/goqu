@@ -22,7 +22,7 @@ type DeleteDataset struct {
 func newDeleteDataset(d, tagName string, queryFactory exec.QueryFactory) *DeleteDataset {
 	return &DeleteDataset{
 		clauses:      exp.NewDeleteClauses(),
-		dialect:      GetDialect(d),
+		dialect:      GetDialectWithTag(d, tagName),
 		queryFactory: queryFactory,
 		isPrepared:   preparedNoPreference,
 		tagName:      tagName,
@@ -60,7 +60,7 @@ func (dd *DeleteDataset) IsPrepared() bool {
 // Sets the adapter used to serialize values and create the SQL statement
 func (dd *DeleteDataset) WithDialect(dl string) *DeleteDataset {
 	ds := dd.copy(dd.GetClauses())
-	ds.dialect = GetDialect(dl)
+	ds.dialect = GetDialectWithTag(dl, dd.tagName)
 	return ds
 }
 

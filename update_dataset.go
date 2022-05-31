@@ -22,7 +22,7 @@ var ErrUnsupportedUpdateTableType = errors.New("unsupported table type, a string
 func newUpdateDataset(d, tagName string, queryFactory exec.QueryFactory) *UpdateDataset {
 	return &UpdateDataset{
 		clauses:      exp.NewUpdateClauses(),
-		dialect:      GetDialect(d),
+		dialect:      GetDialectWithTag(d, tagName),
 		queryFactory: queryFactory,
 		tagName:      tagName,
 	}
@@ -48,7 +48,7 @@ func (ud *UpdateDataset) IsPrepared() bool {
 // Sets the adapter used to serialize values and create the SQL statement
 func (ud *UpdateDataset) WithDialect(dl string) *UpdateDataset {
 	ds := ud.copy(ud.GetClauses())
-	ds.dialect = GetDialect(dl)
+	ds.dialect = GetDialectWithTag(dl, ud.tagName)
 	return ds
 }
 

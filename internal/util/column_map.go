@@ -21,25 +21,25 @@ type (
 	ColumnMap map[string]ColumnData
 )
 
-func newColumnMap(t reflect.Type, fieldIndex []int, prefixes []string) ColumnMap {
+func newColumnMap(t reflect.Type, fieldIndex []int, prefixes []string, tagName string) ColumnMap {
 	cm, n := ColumnMap{}, t.NumField()
 	var subColMaps []ColumnMap
 	for i := 0; i < n; i++ {
 		f := t.Field(i)
 		if f.Anonymous && (f.Type.Kind() == reflect.Struct || f.Type.Kind() == reflect.Ptr) {
-			goquTag := tag.New("db", f.Tag)
+			goquTag := tag.New(tagName, f.Tag)
 			if !goquTag.Contains("-") {
-				subColMaps = append(subColMaps, getStructColumnMap(&f, fieldIndex, goquTag.Values(), prefixes))
+				subColMaps = append(subColMaps, getStructColumnMap(&f, fieldIndex, goquTag.Values(), prefixes, tagName))
 			}
 		} else if f.PkgPath == "" {
-			dbTag := tag.New("db", f.Tag)
+			dbTag := tag.New(tagName, f.Tag)
 			subqueryTag := tag.New("subquery", f.Tag)
 			// if PkgPath is empty then it is an exported field
 			columnName := getColumnName(&f, dbTag)
 			columnSubqueryKey := getSubqueryKey(subqueryTag)
 			if !shouldIgnoreField(dbTag) {
 				if !implementsScanner(f.Type) {
-					subCm := getStructColumnMap(&f, fieldIndex, []string{columnName}, prefixes)
+					subCm := getStructColumnMap(&f, fieldIndex, []string{columnName}, prefixes, tagName)
 					if len(subCm) != 0 {
 						subColMaps = append(subColMaps, subCm)
 						continue
@@ -105,13 +105,13 @@ func newColumnData(f *reflect.StructField, columnName, columnSubqueryKey string,
 	}
 }
 
-func getStructColumnMap(f *reflect.StructField, fieldIndex []int, fieldNames, prefixes []string) ColumnMap {
+func getStructColumnMap(f *reflect.StructField, fieldIndex []int, fieldNames, prefixes []string, tagName string) ColumnMap {
 	subFieldIndexes := concatFieldIndexes(fieldIndex, f.Index)
 	subPrefixes := append(prefixes, fieldNames...)
 	if f.Type.Kind() == reflect.Ptr {
-		return newColumnMap(f.Type.Elem(), subFieldIndexes, subPrefixes)
+		return newColumnMap(f.Type.Elem(), subFieldIndexes, subPrefixes, tagName)
 	}
-	return newColumnMap(f.Type, subFieldIndexes, subPrefixes)
+	return newColumnMap(f.Type, subFieldIndexes, subPrefixes, tagName)
 }
 
 func getColumnName(f *reflect.StructField, dbTag tag.Options) string {

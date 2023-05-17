@@ -12,5 +12,5 @@ func DialectOptions() *goqu.SQLDialectOptions {
 }
 
 func init() {
-	goqu.RegisterDialect("postgres", DialectOptions())
+	goqu.RegisterDialect("postgres", "db", DialectOptions())
 }

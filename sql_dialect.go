@@ -42,14 +42,14 @@ var (
 )
 
 func init() {
-	RegisterDialect("default", DefaultDialectOptions())
+	RegisterDialect("default", "db", DefaultDialectOptions())
 }
 
-func RegisterDialect(name string, do *SQLDialectOptions) {
+func RegisterDialect(name, tagName string, do *SQLDialectOptions) {
 	dialectsMu.Lock()
 	defer dialectsMu.Unlock()
 	lowerName := strings.ToLower(name)
-	dialects[lowerName] = newDialect(lowerName, do)
+	dialects[lowerName] = newDialect(lowerName, tagName, do)
 }
 
 func DeregisterDialect(name string) {
@@ -63,18 +63,26 @@ func GetDialect(name string) SQLDialect {
 	if d, ok := dialects[name]; ok {
 		return d
 	}
-	return newDialect("default", DefaultDialectOptions())
+	return newDialect("default", "db", DefaultDialectOptions())
 }
 
-func newDialect(dialect string, do *SQLDialectOptions) SQLDialect {
+func GetDialectWithTag(name, tagName string) SQLDialect {
+	name = strings.ToLower(name)
+	if d, ok := dialects[name]; ok {
+		return d
+	}
+	return newDialect("default", tagName, DefaultDialectOptions())
+}
+
+func newDialect(dialect, tagName string, do *SQLDialectOptions) SQLDialect {
 	return &sqlDialect{
 		dialect:        dialect,
 		dialectOptions: do,
-		selectGen:      sqlgen.NewSelectSQLGenerator(dialect, do),
-		updateGen:      sqlgen.NewUpdateSQLGenerator(dialect, do),
-		insertGen:      sqlgen.NewInsertSQLGenerator(dialect, do),
-		deleteGen:      sqlgen.NewDeleteSQLGenerator(dialect, do),
-		truncateGen:    sqlgen.NewTruncateSQLGenerator(dialect, do),
+		selectGen:      sqlgen.NewSelectSQLGenerator(dialect, tagName, do),
+		updateGen:      sqlgen.NewUpdateSQLGenerator(dialect, tagName, do),
+		insertGen:      sqlgen.NewInsertSQLGenerator(dialect, tagName, do),
+		deleteGen:      sqlgen.NewDeleteSQLGenerator(dialect, tagName, do),
+		truncateGen:    sqlgen.NewTruncateSQLGenerator(dialect, tagName, do),
 	}
 }
 

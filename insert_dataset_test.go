@@ -148,13 +148,13 @@ func (ids *insertDatasetSuite) TestCols() {
 			ds: bd.Cols("a", "b"),
 			clauses: exp.NewInsertClauses().
 				SetInto(goqu.C("items")).
-				SetCols(exp.NewColumnListExpression(nil, "a", "b")),
+				SetCols(exp.NewColumnListExpression(nil, "db", "a", "b")),
 		},
 		insertTestCase{
 			ds: bd.Cols("a", "b").Cols("c", "d"),
 			clauses: exp.NewInsertClauses().
 				SetInto(goqu.C("items")).
-				SetCols(exp.NewColumnListExpression(nil, "c", "d")),
+				SetCols(exp.NewColumnListExpression(nil, "db", "c", "d")),
 		},
 		insertTestCase{
 			ds:      bd,
@@ -172,7 +172,7 @@ func (ids *insertDatasetSuite) TestClearCols() {
 		},
 		insertTestCase{
 			ds:      bd,
-			clauses: exp.NewInsertClauses().SetInto(goqu.C("items")).SetCols(exp.NewColumnListExpression(nil, "a", "b")),
+			clauses: exp.NewInsertClauses().SetInto(goqu.C("items")).SetCols(exp.NewColumnListExpression(nil, "db", "a", "b")),
 		},
 	)
 }
@@ -182,11 +182,11 @@ func (ids *insertDatasetSuite) TestColsAppend() {
 	ids.assertCases(
 		insertTestCase{
 			ds:      bd.ColsAppend("b"),
-			clauses: exp.NewInsertClauses().SetInto(goqu.C("items")).SetCols(exp.NewColumnListExpression(nil, "a", "b")),
+			clauses: exp.NewInsertClauses().SetInto(goqu.C("items")).SetCols(exp.NewColumnListExpression(nil, "db", "a", "b")),
 		},
 		insertTestCase{
 			ds:      bd,
-			clauses: exp.NewInsertClauses().SetInto(goqu.C("items")).SetCols(exp.NewColumnListExpression(nil, "a")),
+			clauses: exp.NewInsertClauses().SetInto(goqu.C("items")).SetCols(exp.NewColumnListExpression(nil, "db", "a")),
 		},
 	)
 }
@@ -204,7 +204,7 @@ func (ids *insertDatasetSuite) TestFromQuery() {
 			ds: bd.FromQuery(goqu.From("other_items").Where(goqu.C("b").Gt(10))).Cols("a", "b"),
 			clauses: exp.NewInsertClauses().
 				SetInto(goqu.C("items")).
-				SetCols(exp.NewColumnListExpression(nil, "a", "b")).
+				SetCols(exp.NewColumnListExpression(nil, "db", "a", "b")).
 				SetFrom(goqu.From("other_items").Where(goqu.C("b").Gt(10))),
 		},
 		insertTestCase{
@@ -423,31 +423,31 @@ func (ids *insertDatasetSuite) TestReturning() {
 			ds: bd.Returning("a"),
 			clauses: exp.NewInsertClauses().
 				SetInto(goqu.C("items")).
-				SetReturning(exp.NewColumnListExpression(nil, "a")),
+				SetReturning(exp.NewColumnListExpression(nil, "db", "a")),
 		},
 		insertTestCase{
 			ds: bd.Returning(),
 			clauses: exp.NewInsertClauses().
 				SetInto(goqu.C("items")).
-				SetReturning(exp.NewColumnListExpression(nil)),
+				SetReturning(exp.NewColumnListExpression(nil, "db")),
 		},
 		insertTestCase{
 			ds: bd.Returning(nil),
 			clauses: exp.NewInsertClauses().
 				SetInto(goqu.C("items")).
-				SetReturning(exp.NewColumnListExpression(nil)),
+				SetReturning(exp.NewColumnListExpression(nil, "db")),
 		},
 		insertTestCase{
 			ds: bd.Returning(),
 			clauses: exp.NewInsertClauses().
 				SetInto(goqu.C("items")).
-				SetReturning(exp.NewColumnListExpression(nil)),
+				SetReturning(exp.NewColumnListExpression(nil, "db")),
 		},
 		insertTestCase{
 			ds: bd.Returning("a").Returning("b"),
 			clauses: exp.NewInsertClauses().
 				SetInto(goqu.C("items")).
-				SetReturning(exp.NewColumnListExpression(nil, "b")),
+				SetReturning(exp.NewColumnListExpression(nil, "db", "b")),
 		},
 		insertTestCase{
 			ds:      bd,

@@ -95,5 +95,5 @@ func DialectOptions() *goqu.SQLDialectOptions {
 }
 
 func init() {
-	goqu.RegisterDialect("sqlserver", DialectOptions())
+	goqu.RegisterDialect("sqlserver", "db", DialectOptions())
 }

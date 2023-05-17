@@ -23,8 +23,8 @@ type (
 
 var ErrNoSourceForDelete = errors.New("no source found when generating delete sql")
 
-func NewDeleteSQLGenerator(dialect string, do *SQLDialectOptions) DeleteSQLGenerator {
-	return &deleteSQLGenerator{NewCommonSQLGenerator(dialect, do)}
+func NewDeleteSQLGenerator(dialect, tagName string, do *SQLDialectOptions) DeleteSQLGenerator {
+	return &deleteSQLGenerator{NewCommonSQLGenerator(dialect, tagName, do)}
 }
 
 func (dsg *deleteSQLGenerator) Generate(b sb.SQLBuilder, clauses exp.DeleteClauses) {
@@ -41,10 +41,10 @@ func (dsg *deleteSQLGenerator) Generate(b sb.SQLBuilder, clauses exp.DeleteClaus
 			dsg.ExpressionSQLGenerator().Generate(b, clauses.CommonTables())
 		case DeleteBeginSQLFragment:
 			dsg.DeleteBeginSQL(
-				b, exp.NewColumnListExpression(nil, clauses.From()), !(clauses.HasLimit() || clauses.HasOrder()),
+				b, exp.NewColumnListExpression(nil, "db", clauses.From()), !(clauses.HasLimit() || clauses.HasOrder()),
 			)
 		case FromSQLFragment:
-			dsg.FromSQL(b, exp.NewColumnListExpression(nil, clauses.From()))
+			dsg.FromSQL(b, exp.NewColumnListExpression(nil, "db", clauses.From()))
 		case WhereSQLFragment:
 			dsg.WhereSQL(b, clauses.Where())
 		case OrderSQLFragment:

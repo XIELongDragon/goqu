@@ -19,10 +19,10 @@ func (r Record) Cols() []string {
 	return cols
 }
 
-func NewRecordFromStruct(i interface{}, forInsert, forUpdate bool) (r Record, err error) {
+func NewRecordFromStruct(i interface{}, forInsert, forUpdate bool, tagName string) (r Record, err error) {
 	value := reflect.ValueOf(i)
 	if value.IsValid() {
-		cm, err := util.GetColumnMap(value.Interface())
+		cm, err := util.GetColumnMap(value.Interface(), tagName)
 		if err != nil {
 			return nil, err
 		}

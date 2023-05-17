@@ -26,8 +26,8 @@ var (
 	ErrNoSetValuesForUpdate = errors.New("no set values found when generating UPDATE sql")
 )
 
-func NewUpdateSQLGenerator(dialect string, do *SQLDialectOptions) UpdateSQLGenerator {
-	return &updateSQLGenerator{NewCommonSQLGenerator(dialect, do)}
+func NewUpdateSQLGenerator(dialect, tagName string, do *SQLDialectOptions) UpdateSQLGenerator {
+	return &updateSQLGenerator{NewCommonSQLGenerator(dialect, tagName, do)}
 }
 
 func (usg *updateSQLGenerator) Generate(b sb.SQLBuilder, clauses exp.UpdateClauses) {
@@ -42,7 +42,7 @@ func (usg *updateSQLGenerator) Generate(b sb.SQLBuilder, clauses exp.UpdateClaus
 	if !usg.DialectOptions().SupportsMultipleUpdateTables && clauses.HasFrom() {
 		b.SetError(errors.New("%s dialect does not support multiple tables in UPDATE", usg.Dialect()))
 	}
-	updates, err := exp.NewUpdateExpressions(clauses.SetValues())
+	updates, err := exp.NewUpdateExpressions(usg.TagName(), clauses.SetValues())
 	if err != nil {
 		b.SetError(err)
 		return

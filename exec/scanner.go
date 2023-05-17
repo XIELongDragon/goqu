@@ -25,6 +25,7 @@ type (
 		rows      *sql.Rows
 		columnMap util.ColumnMap
 		columns   []string
+		tagName   string
 	}
 )
 
@@ -33,8 +34,8 @@ func unableToFindFieldError(col string) error {
 }
 
 // NewScanner returns a scanner that can be used for scanning rows into structs.
-func NewScanner(rows *sql.Rows) Scanner {
-	return &scanner{rows: rows}
+func NewScanner(rows *sql.Rows, tagName string) Scanner {
+	return &scanner{rows: rows, tagName: tagName}
 }
 
 // Next prepares the next row for Scanning. See sql.Rows#Next for more
@@ -53,7 +54,7 @@ func (s *scanner) Err() error {
 func (s *scanner) ScanStruct(i interface{}) error {
 	// Setup columnMap and columns, but only once.
 	if s.columnMap == nil || s.columns == nil {
-		cm, err := util.GetColumnMap(i)
+		cm, err := util.GetColumnMap(i, s.tagName)
 		if err != nil {
 			return err
 		}

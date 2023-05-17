@@ -87,7 +87,14 @@ func DialectOptionsV8() *goqu.SQLDialectOptions {
 	return opts
 }
 
+func DialectOptionsV8Nano() *goqu.SQLDialectOptions {
+	opts := DialectOptionsV8()
+	opts.TimeFormat = "2006-01-02 15:04:05.999999999"
+	return opts
+}
+
 func init() {
-	goqu.RegisterDialect("mysql", DialectOptions())
-	goqu.RegisterDialect("mysql8", DialectOptionsV8())
+	goqu.RegisterDialect("mysql", "db", DialectOptions())
+	goqu.RegisterDialect("mysql8", "db", DialectOptionsV8())
+	goqu.RegisterDialect("mysql8nano", "db", DialectOptionsV8Nano())
 }

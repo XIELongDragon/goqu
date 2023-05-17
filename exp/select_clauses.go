@@ -86,7 +86,7 @@ type (
 
 func NewSelectClauses() SelectClauses {
 	return &selectClauses{
-		selectColumns: NewColumnListExpression(nil, Star()),
+		selectColumns: NewColumnListExpression(nil, "db", Star()),
 	}
 }
 

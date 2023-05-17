@@ -17,6 +17,7 @@ type SelectDataset struct {
 	isPrepared   prepared
 	queryFactory exec.QueryFactory
 	subqueries   map[string]exp.Aliaseable
+	tagName      string
 	err          error
 }
 
@@ -25,26 +26,27 @@ var ErrQueryFactoryNotFoundError = errors.New(
 )
 
 // used internally by database to create a database with a specific adapter
-func newDataset(d string, queryFactory exec.QueryFactory) *SelectDataset {
+func newDataset(d, tagName string, queryFactory exec.QueryFactory) *SelectDataset {
 	return &SelectDataset{
 		clauses:      exp.NewSelectClauses(),
-		dialect:      GetDialect(d),
+		dialect:      GetDialectWithTag(d, tagName),
 		queryFactory: queryFactory,
+		tagName:      tagName,
 	}
 }
 
 func From(table ...interface{}) *SelectDataset {
-	return newDataset("default", nil).From(table...)
+	return newDataset("default", "db", nil).From(table...)
 }
 
 func Select(cols ...interface{}) *SelectDataset {
-	return newDataset("default", nil).Select(cols...)
+	return newDataset("default", "db", nil).Select(cols...)
 }
 
 // Sets the adapter used to serialize values and create the SQL statement
 func (sd *SelectDataset) WithDialect(dl string) *SelectDataset {
 	ds := sd.copy(sd.GetClauses())
-	ds.dialect = GetDialect(dl)
+	ds.dialect = GetDialectWithTag(dl, sd.tagName)
 	return ds
 }
 
@@ -94,6 +96,8 @@ func (sd *SelectDataset) copy(clauses exp.SelectClauses) *SelectDataset {
 		clauses:      clauses,
 		isPrepared:   sd.isPrepared,
 		queryFactory: sd.queryFactory,
+		subqueries:   sd.subqueries,
+		tagName:      sd.tagName,
 		err:          sd.err,
 	}
 
@@ -109,7 +113,7 @@ func (sd *SelectDataset) copy(clauses exp.SelectClauses) *SelectDataset {
 // Creates a new UpdateDataset using the FROM of this dataset. This method will also copy over the `WITH`, `WHERE`,
 // `ORDER , and `LIMIT`
 func (sd *SelectDataset) Update() *UpdateDataset {
-	u := newUpdateDataset(sd.dialect.Dialect(), sd.queryFactory).
+	u := newUpdateDataset(sd.dialect.Dialect(), sd.tagName, sd.queryFactory).
 		Prepared(sd.isPrepared.Bool())
 	if sd.clauses.HasSources() {
 		u = u.Table(sd.GetClauses().From().Columns()[0])
@@ -136,7 +140,7 @@ func (sd *SelectDataset) Update() *UpdateDataset {
 // Creates a new InsertDataset using the FROM of this dataset. This method will also copy over the `WITH` clause to the
 // insert.
 func (sd *SelectDataset) Insert() *InsertDataset {
-	i := newInsertDataset(sd.dialect.Dialect(), sd.queryFactory).
+	i := newInsertDataset(sd.dialect.Dialect(), sd.tagName, sd.queryFactory).
 		Prepared(sd.isPrepared.Bool())
 	if sd.clauses.HasSources() {
 		i = i.Into(sd.GetClauses().From().Columns()[0])
@@ -152,7 +156,7 @@ func (sd *SelectDataset) Insert() *InsertDataset {
 // Creates a new DeleteDataset using the FROM of this dataset. This method will also copy over the `WITH`, `WHERE`,
 // `ORDER , and `LIMIT`
 func (sd *SelectDataset) Delete() *DeleteDataset {
-	d := newDeleteDataset(sd.dialect.Dialect(), sd.queryFactory).
+	d := newDeleteDataset(sd.dialect.Dialect(), sd.tagName, sd.queryFactory).
 		Prepared(sd.isPrepared.Bool())
 	if sd.clauses.HasSources() {
 		d = d.From(sd.clauses.From().Columns()[0])
@@ -178,7 +182,7 @@ func (sd *SelectDataset) Delete() *DeleteDataset {
 
 // Creates a new TruncateDataset using the FROM of this dataset.
 func (sd *SelectDataset) Truncate() *TruncateDataset {
-	td := newTruncateDataset(sd.dialect.Dialect(), sd.queryFactory)
+	td := newTruncateDataset(sd.dialect.Dialect(), sd.tagName, sd.queryFactory)
 	if sd.clauses.HasSources() {
 		td = td.Table(sd.clauses.From())
 	}
@@ -220,7 +224,7 @@ func (sd *SelectDataset) Select(selects ...interface{}) *SelectDataset {
 	if len(selects) == 0 {
 		return sd.ClearSelect()
 	}
-	return sd.copy(sd.clauses.SetSelect(exp.NewColumnListExpression(sd.subqueries, selects...)))
+	return sd.copy(sd.clauses.SetSelect(exp.NewColumnListExpression(sd.subqueries, sd.tagName, selects...)))
 }
 
 // Adds columns to the SELECT DISTINCT clause. See examples
@@ -241,10 +245,10 @@ func (sd *SelectDataset) SelectDistinct(selects ...interface{}) *SelectDataset {
 	return sd.copy(
 		sd.clauses.
 			SetSelect(
-				exp.NewColumnListExpression(sd.subqueries, selects...),
+				exp.NewColumnListExpression(sd.subqueries, sd.tagName, selects...),
 			).
 			SetDistinct(
-				exp.NewColumnListExpression(sd.subqueries),
+				exp.NewColumnListExpression(sd.subqueries, sd.tagName),
 			),
 	)
 }
@@ -252,7 +256,7 @@ func (sd *SelectDataset) SelectDistinct(selects ...interface{}) *SelectDataset {
 // Resets to SELECT *. If the SelectDistinct or Distinct was used the returned Dataset will have the the dataset set to SELECT *.
 // See examples.
 func (sd *SelectDataset) ClearSelect() *SelectDataset {
-	return sd.copy(sd.clauses.SetSelect(exp.NewColumnListExpression(sd.subqueries, exp.Star())).SetDistinct(nil))
+	return sd.copy(sd.clauses.SetSelect(exp.NewColumnListExpression(sd.subqueries, sd.tagName, exp.Star())).SetDistinct(nil))
 }
 
 // Adds columns to the SELECT clause. See examples
@@ -263,11 +267,11 @@ func (sd *SelectDataset) ClearSelect() *SelectDataset {
 //   LiteralExpression: (See Literal) Will use the literal SQL
 //   SQLFunction: (See Func, MIN, MAX, COUNT....)
 func (sd *SelectDataset) SelectAppend(selects ...interface{}) *SelectDataset {
-	return sd.copy(sd.clauses.SelectAppend(exp.NewColumnListExpression(sd.subqueries, selects...)))
+	return sd.copy(sd.clauses.SelectAppend(exp.NewColumnListExpression(sd.subqueries, sd.tagName, selects...)))
 }
 
 func (sd *SelectDataset) Distinct(on ...interface{}) *SelectDataset {
-	return sd.copy(sd.clauses.SetDistinct(exp.NewColumnListExpression(sd.subqueries, on...)))
+	return sd.copy(sd.clauses.SetDistinct(exp.NewColumnListExpression(sd.subqueries, sd.tagName, on...)))
 }
 
 // Adds a FROM clause. This return a new dataset with the original sources replaced. See examples.
@@ -286,7 +290,7 @@ func (sd *SelectDataset) From(from ...interface{}) *SelectDataset {
 			sources = append(sources, source)
 		}
 	}
-	return sd.copy(sd.clauses.SetFrom(exp.NewColumnListExpression(sd.subqueries, sources...)))
+	return sd.copy(sd.clauses.SetFrom(exp.NewColumnListExpression(sd.subqueries, sd.tagName, sources...)))
 }
 
 // Returns a new Dataset with the current one as an source. If the current Dataset is not aliased (See Dataset#As) then
@@ -401,12 +405,12 @@ func (sd *SelectDataset) withLock(strength exp.LockStrength, option exp.WaitOpti
 
 // Adds a GROUP BY clause. See examples.
 func (sd *SelectDataset) GroupBy(groupBy ...interface{}) *SelectDataset {
-	return sd.copy(sd.clauses.SetGroupBy(exp.NewColumnListExpression(sd.subqueries, groupBy...)))
+	return sd.copy(sd.clauses.SetGroupBy(exp.NewColumnListExpression(sd.subqueries, sd.tagName, groupBy...)))
 }
 
 // Adds more columns to the current GROUP BY clause. See examples.
 func (sd *SelectDataset) GroupByAppend(groupBy ...interface{}) *SelectDataset {
-	return sd.copy(sd.clauses.GroupByAppend(exp.NewColumnListExpression(sd.subqueries, groupBy...)))
+	return sd.copy(sd.clauses.GroupByAppend(exp.NewColumnListExpression(sd.subqueries, sd.tagName, groupBy...)))
 }
 
 // Adds a HAVING clause. See examples.

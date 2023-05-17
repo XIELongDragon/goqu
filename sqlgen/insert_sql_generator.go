@@ -36,8 +36,8 @@ func errUpsertWithWhereNotSupported(dialect string) error {
 	return errors.New("dialect does not support upsert with where clause [dialect=%s]", dialect)
 }
 
-func NewInsertSQLGenerator(dialect string, do *SQLDialectOptions) InsertSQLGenerator {
-	return &insertSQLGenerator{NewCommonSQLGenerator(dialect, do)}
+func NewInsertSQLGenerator(dialect, tagName string, do *SQLDialectOptions) InsertSQLGenerator {
+	return &insertSQLGenerator{NewCommonSQLGenerator(dialect, tagName, do)}
 }
 
 func (isg *insertSQLGenerator) Generate(
@@ -83,7 +83,7 @@ func (isg *insertSQLGenerator) InsertBeginSQL(b sb.SQLBuilder, o exp.ConflictExp
 func (isg *insertSQLGenerator) InsertSQL(b sb.SQLBuilder, ic exp.InsertClauses) {
 	switch {
 	case ic.HasRows():
-		ie, err := exp.NewInsertExpression(ic.Rows()...)
+		ie, err := exp.NewInsertExpression(isg.TagName(), ic.Rows()...)
 		if err != nil {
 			b.SetError(err)
 			return
@@ -187,7 +187,7 @@ func (isg *insertSQLGenerator) onConflictDoUpdateSQL(b sb.SQLBuilder, o exp.Conf
 		b.SetError(ErrConflictUpdateValuesRequired)
 		return
 	}
-	ue, err := exp.NewUpdateExpressions(update)
+	ue, err := exp.NewUpdateExpressions(isg.TagName(), update)
 	if err != nil {
 		b.SetError(err)
 		return

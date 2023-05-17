@@ -12,12 +12,12 @@ type updateExpressionTestSuite struct {
 }
 
 func (uets *updateExpressionTestSuite) TestNewUpdateExpressions_withInvalidValue() {
-	_, err := exp.NewUpdateExpressions(true)
+	_, err := exp.NewUpdateExpressions("db", true)
 	uets.EqualError(err, "goqu: unsupported update interface type bool")
 }
 
 func (uets *updateExpressionTestSuite) TestNewUpdateExpressions_withRecords() {
-	ie, err := exp.NewUpdateExpressions(exp.Record{"c": "a", "b": "d"})
+	ie, err := exp.NewUpdateExpressions("db", exp.Record{"c": "a", "b": "d"})
 	uets.NoError(err)
 	eie := []exp.UpdateExpression{
 		exp.NewIdentifierExpression("", "", "b").Set("d"),
@@ -27,7 +27,7 @@ func (uets *updateExpressionTestSuite) TestNewUpdateExpressions_withRecords() {
 }
 
 func (uets *updateExpressionTestSuite) TestNewUpdateExpressions_withMap() {
-	ie, err := exp.NewUpdateExpressions(map[string]interface{}{"c": "a", "b": "d"})
+	ie, err := exp.NewUpdateExpressions("db", map[string]interface{}{"c": "a", "b": "d"})
 	uets.NoError(err)
 	eie := []exp.UpdateExpression{
 		exp.NewIdentifierExpression("", "", "b").Set("d"),
@@ -41,7 +41,7 @@ func (uets *updateExpressionTestSuite) TestNewUpdateExpressions_withStructs() {
 		C string `db:"c"`
 		B string `db:"b"`
 	}
-	ie, err := exp.NewUpdateExpressions(testRecord{C: "a", B: "d"})
+	ie, err := exp.NewUpdateExpressions("db", testRecord{C: "a", B: "d"})
 	uets.NoError(err)
 	eie := []exp.UpdateExpression{
 		exp.NewIdentifierExpression("", "", "b").Set("d"),
@@ -56,7 +56,7 @@ func (uets *updateExpressionTestSuite) TestNewUpdateExpressions_withStructsWitho
 		FieldB bool
 		FieldC string
 	}
-	ie, err := exp.NewUpdateExpressions(testRecord{FieldA: 1, FieldB: true, FieldC: "a"})
+	ie, err := exp.NewUpdateExpressions("db", testRecord{FieldA: 1, FieldB: true, FieldC: "a"})
 	uets.NoError(err)
 	eie := []exp.UpdateExpression{
 		exp.NewIdentifierExpression("", "", "fielda").Set(int64(1)),
@@ -72,7 +72,7 @@ func (uets *updateExpressionTestSuite) TestNewUpdateExpressions_withStructsIgnor
 		FieldB bool
 		FieldC string
 	}
-	ie, err := exp.NewUpdateExpressions(testRecord{FieldA: 1, FieldB: true, FieldC: "a"})
+	ie, err := exp.NewUpdateExpressions("db", testRecord{FieldA: 1, FieldB: true, FieldC: "a"})
 	uets.NoError(err)
 	eie := []exp.UpdateExpression{
 		exp.NewIdentifierExpression("", "", "fieldb").Set(true),
@@ -87,7 +87,7 @@ func (uets *updateExpressionTestSuite) TestNewUpdateExpressions_withStructsWithG
 		FieldB bool   `goqu:"skipupdate"`
 		FieldC string `goqu:"skipinsert"`
 	}
-	ie, err := exp.NewUpdateExpressions(testRecord{FieldA: 1, FieldB: true, FieldC: "a"})
+	ie, err := exp.NewUpdateExpressions("db", testRecord{FieldA: 1, FieldB: true, FieldC: "a"})
 	uets.NoError(err)
 	eie := []exp.UpdateExpression{
 		exp.NewIdentifierExpression("", "", "fielda").Set(int64(1)),
@@ -101,7 +101,7 @@ func (uets *updateExpressionTestSuite) TestNewUpdateExpressions_withStructPointe
 		C string `db:"c"`
 		B string `db:"b"`
 	}
-	ie, err := exp.NewUpdateExpressions(&testRecord{C: "a", B: "d"})
+	ie, err := exp.NewUpdateExpressions("db", &testRecord{C: "a", B: "d"})
 	uets.NoError(err)
 	eie := []exp.UpdateExpression{
 		exp.NewIdentifierExpression("", "", "b").Set("d"),
@@ -121,6 +121,7 @@ func (uets *updateExpressionTestSuite) TestNewUpdateExpressions_withStructsWithE
 		Name    string `db:"name"`
 	}
 	ie, err := exp.NewUpdateExpressions(
+		"db",
 		item{Address: "111 Test Addr", Name: "Test1", Phone: Phone{Home: "123123", Primary: "456456"}},
 	)
 	uets.NoError(err)
@@ -144,6 +145,7 @@ func (uets *updateExpressionTestSuite) TestNewUpdateExpressions_withStructsWithE
 		Name    string `db:"name"`
 	}
 	ie, err := exp.NewUpdateExpressions(
+		"db",
 		item{Address: "111 Test Addr", Name: "Test1", Phone: &Phone{Home: "123123", Primary: "456456"}},
 	)
 	uets.NoError(err)
@@ -167,6 +169,7 @@ func (uets *updateExpressionTestSuite) TestNewUpdateExpressions_withNilEmbeddedS
 		Name    string `db:"name"`
 	}
 	ie, err := exp.NewUpdateExpressions(
+		"db",
 		item{Address: "111 Test Addr", Name: "Test1"},
 	)
 	uets.NoError(err)

@@ -32,15 +32,15 @@ func (dds *deleteDatasetSuite) assertCases(cases ...deleteTestCase) {
 func (dds *deleteDatasetSuite) SetupSuite() {
 	noReturn := goqu.DefaultDialectOptions()
 	noReturn.SupportsReturn = false
-	goqu.RegisterDialect("no-return", noReturn)
+	goqu.RegisterDialect("no-return", "db", noReturn)
 
 	limitOnDelete := goqu.DefaultDialectOptions()
 	limitOnDelete.SupportsLimitOnDelete = true
-	goqu.RegisterDialect("limit-on-delete", limitOnDelete)
+	goqu.RegisterDialect("limit-on-delete", "db", limitOnDelete)
 
 	orderOnDelete := goqu.DefaultDialectOptions()
 	orderOnDelete.SupportsOrderByOnDelete = true
-	goqu.RegisterDialect("order-on-delete", orderOnDelete)
+	goqu.RegisterDialect("order-on-delete", "db", orderOnDelete)
 }
 
 func (dds *deleteDatasetSuite) TearDownSuite() {
@@ -359,25 +359,25 @@ func (dds *deleteDatasetSuite) TestReturning() {
 			ds: bd.Returning("a"),
 			clauses: exp.NewDeleteClauses().
 				SetFrom(goqu.C("items")).
-				SetReturning(exp.NewColumnListExpression(nil, "a")),
+				SetReturning(exp.NewColumnListExpression(nil, "db", "a")),
 		},
 		deleteTestCase{
 			ds: bd.Returning(),
 			clauses: exp.NewDeleteClauses().
 				SetFrom(goqu.C("items")).
-				SetReturning(exp.NewColumnListExpression(nil)),
+				SetReturning(exp.NewColumnListExpression(nil, "db")),
 		},
 		deleteTestCase{
 			ds: bd.Returning(nil),
 			clauses: exp.NewDeleteClauses().
 				SetFrom(goqu.C("items")).
-				SetReturning(exp.NewColumnListExpression(nil)),
+				SetReturning(exp.NewColumnListExpression(nil, "db")),
 		},
 		deleteTestCase{
 			ds: bd.Returning("a").Returning("b"),
 			clauses: exp.NewDeleteClauses().
 				SetFrom(goqu.C("items")).
-				SetReturning(exp.NewColumnListExpression(nil, "b")),
+				SetReturning(exp.NewColumnListExpression(nil, "db", "b")),
 		},
 		deleteTestCase{
 			ds:      bd,

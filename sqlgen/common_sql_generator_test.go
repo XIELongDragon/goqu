@@ -40,13 +40,13 @@ func (csgs *commonSQLGeneratorSuite) assertCases(testCases ...commonSQLTestCase)
 func (csgs *commonSQLGeneratorSuite) TestReturningSQL() {
 	returningGen := func(csgs sqlgen.CommonSQLGenerator) func(sb.SQLBuilder) {
 		return func(sb sb.SQLBuilder) {
-			csgs.ReturningSQL(sb, exp.NewColumnListExpression(nil, "a", "b"))
+			csgs.ReturningSQL(sb, exp.NewColumnListExpression(nil, "db", "a", "b"))
 		}
 	}
 
 	returningNoColsGen := func(csgs sqlgen.CommonSQLGenerator) func(sb.SQLBuilder) {
 		return func(sb sb.SQLBuilder) {
-			csgs.ReturningSQL(sb, exp.NewColumnListExpression(nil))
+			csgs.ReturningSQL(sb, exp.NewColumnListExpression(nil, "db"))
 		}
 	}
 
@@ -58,11 +58,11 @@ func (csgs *commonSQLGeneratorSuite) TestReturningSQL() {
 
 	opts := sqlgen.DefaultDialectOptions()
 	opts.SupportsReturn = true
-	csgs1 := sqlgen.NewCommonSQLGenerator("test", opts)
+	csgs1 := sqlgen.NewCommonSQLGenerator("test", "db", opts)
 
 	opts2 := sqlgen.DefaultDialectOptions()
 	opts2.SupportsReturn = false
-	csgs2 := sqlgen.NewCommonSQLGenerator("test", opts2)
+	csgs2 := sqlgen.NewCommonSQLGenerator("test", "db", opts2)
 
 	csgs.assertCases(
 		commonSQLTestCase{gen: returningGen(csgs1), sql: ` RETURNING "a", "b"`},
@@ -82,13 +82,13 @@ func (csgs *commonSQLGeneratorSuite) TestReturningSQL() {
 func (csgs *commonSQLGeneratorSuite) TestFromSQL() {
 	fromGen := func(csgs sqlgen.CommonSQLGenerator) func(sb.SQLBuilder) {
 		return func(sb sb.SQLBuilder) {
-			csgs.FromSQL(sb, exp.NewColumnListExpression(nil, "a", "b"))
+			csgs.FromSQL(sb, exp.NewColumnListExpression(nil, "db", "a", "b"))
 		}
 	}
 
 	fromNoColsGen := func(csgs sqlgen.CommonSQLGenerator) func(sb.SQLBuilder) {
 		return func(sb sb.SQLBuilder) {
-			csgs.FromSQL(sb, exp.NewColumnListExpression(nil))
+			csgs.FromSQL(sb, exp.NewColumnListExpression(nil, "db"))
 		}
 	}
 
@@ -98,11 +98,11 @@ func (csgs *commonSQLGeneratorSuite) TestFromSQL() {
 		}
 	}
 
-	csg := sqlgen.NewCommonSQLGenerator("test", sqlgen.DefaultDialectOptions())
+	csg := sqlgen.NewCommonSQLGenerator("test", "db", sqlgen.DefaultDialectOptions())
 
 	opts := sqlgen.DefaultDialectOptions()
 	opts.FromFragment = []byte(" from")
-	csgFromFrag := sqlgen.NewCommonSQLGenerator("test", opts)
+	csgFromFrag := sqlgen.NewCommonSQLGenerator("test", "db", opts)
 
 	csgs.assertCases(
 		commonSQLTestCase{gen: fromGen(csg), sql: ` FROM "a", "b"`},
@@ -138,11 +138,11 @@ func (csgs *commonSQLGeneratorSuite) TestWhereSQL() {
 		}
 	}
 
-	csg := sqlgen.NewCommonSQLGenerator("test", sqlgen.DefaultDialectOptions())
+	csg := sqlgen.NewCommonSQLGenerator("test", "db", sqlgen.DefaultDialectOptions())
 
 	opts := sqlgen.DefaultDialectOptions()
 	opts.WhereFragment = []byte(" where ")
-	csgWhereFrag := sqlgen.NewCommonSQLGenerator("test", opts)
+	csgWhereFrag := sqlgen.NewCommonSQLGenerator("test", "db", opts)
 
 	w := exp.Ex{"a": "b"}
 	w2 := exp.Ex{"b": "c"}
@@ -203,7 +203,7 @@ func (csgs *commonSQLGeneratorSuite) TestOrderSQL() {
 		}
 	}
 
-	csg := sqlgen.NewCommonSQLGenerator("test", sqlgen.DefaultDialectOptions())
+	csg := sqlgen.NewCommonSQLGenerator("test", "db", sqlgen.DefaultDialectOptions())
 
 	opts := sqlgen.DefaultDialectOptions()
 	// override fragments to ensure they are used
@@ -212,7 +212,7 @@ func (csgs *commonSQLGeneratorSuite) TestOrderSQL() {
 	opts.DescFragment = []byte(" desc")
 	opts.NullsFirstFragment = []byte(" nulls first")
 	opts.NullsLastFragment = []byte(" nulls last")
-	csgCustom := sqlgen.NewCommonSQLGenerator("test", opts)
+	csgCustom := sqlgen.NewCommonSQLGenerator("test", "db", opts)
 
 	ident := exp.NewIdentifierExpression("", "", "a")
 	oa := ident.Asc()
@@ -281,11 +281,11 @@ func (csgs *commonSQLGeneratorSuite) TestLimitSQL() {
 		}
 	}
 
-	csg := sqlgen.NewCommonSQLGenerator("test", sqlgen.DefaultDialectOptions())
+	csg := sqlgen.NewCommonSQLGenerator("test", "db", sqlgen.DefaultDialectOptions())
 
 	opts := sqlgen.DefaultDialectOptions()
 	opts.LimitFragment = []byte(" limit ")
-	csgCustom := sqlgen.NewCommonSQLGenerator("test", opts)
+	csgCustom := sqlgen.NewCommonSQLGenerator("test", "db", opts)
 
 	l := int64(10)
 	la := exp.NewLiteralExpression("ALL")
@@ -318,7 +318,7 @@ func (csgs *commonSQLGeneratorSuite) TestUpdateExpressionSQL() {
 		}
 	}
 
-	csg := sqlgen.NewCommonSQLGenerator("test", sqlgen.DefaultDialectOptions())
+	csg := sqlgen.NewCommonSQLGenerator("test", "db", sqlgen.DefaultDialectOptions())
 	ue := exp.NewIdentifierExpression("", "", "col").Set("a")
 	ue2 := exp.NewIdentifierExpression("", "", "col2").Set("b")
 

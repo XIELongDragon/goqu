@@ -633,7 +633,7 @@ func (esg *expressionSQLGenerator) sqlWindowFunctionExpression(b sb.SQLBuilder, 
 		}
 		esg.Generate(b, sqlWinFunc.Window())
 	default:
-		esg.Generate(b, exp.NewWindowExpression(nil, nil, nil, nil))
+		esg.Generate(b, exp.NewWindowExpression("db", nil, nil, nil, nil))
 	}
 }
 

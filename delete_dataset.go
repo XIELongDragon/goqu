@@ -14,22 +14,24 @@ type DeleteDataset struct {
 	clauses      exp.DeleteClauses
 	isPrepared   prepared
 	queryFactory exec.QueryFactory
+	tagName      string
 	err          error
 }
 
 // used internally by database to create a database with a specific adapter
-func newDeleteDataset(d string, queryFactory exec.QueryFactory) *DeleteDataset {
+func newDeleteDataset(d, tagName string, queryFactory exec.QueryFactory) *DeleteDataset {
 	return &DeleteDataset{
 		clauses:      exp.NewDeleteClauses(),
-		dialect:      GetDialect(d),
+		dialect:      GetDialectWithTag(d, tagName),
 		queryFactory: queryFactory,
 		isPrepared:   preparedNoPreference,
+		tagName:      tagName,
 		err:          nil,
 	}
 }
 
 func Delete(table interface{}) *DeleteDataset {
-	return newDeleteDataset("default", nil).From(table)
+	return newDeleteDataset("default", "db", nil).From(table)
 }
 
 func (dd *DeleteDataset) Expression() exp.Expression {
@@ -58,7 +60,7 @@ func (dd *DeleteDataset) IsPrepared() bool {
 // Sets the adapter used to serialize values and create the SQL statement
 func (dd *DeleteDataset) WithDialect(dl string) *DeleteDataset {
 	ds := dd.copy(dd.GetClauses())
-	ds.dialect = GetDialect(dl)
+	ds.dialect = GetDialectWithTag(dl, dd.tagName)
 	return ds
 }
 
@@ -86,6 +88,7 @@ func (dd *DeleteDataset) copy(clauses exp.DeleteClauses) *DeleteDataset {
 		clauses:      clauses,
 		isPrepared:   dd.isPrepared,
 		queryFactory: dd.queryFactory,
+		tagName:      dd.tagName,
 		err:          dd.err,
 	}
 }
@@ -180,7 +183,7 @@ func (dd *DeleteDataset) ClearLimit() *DeleteDataset {
 
 // Adds a RETURNING clause to the dataset if the adapter supports it.
 func (dd *DeleteDataset) Returning(returning ...interface{}) *DeleteDataset {
-	return dd.copy(dd.clauses.SetReturning(exp.NewColumnListExpression(nil, returning...)))
+	return dd.copy(dd.clauses.SetReturning(exp.NewColumnListExpression(nil, dd.tagName, returning...)))
 }
 
 // Get any error that has been set or nil if no error has been set.

@@ -11,26 +11,28 @@ type TruncateDataset struct {
 	clauses      exp.TruncateClauses
 	isPrepared   prepared
 	queryFactory exec.QueryFactory
+	tagName      string
 	err          error
 }
 
 // used internally by database to create a database with a specific adapter
-func newTruncateDataset(d string, queryFactory exec.QueryFactory) *TruncateDataset {
+func newTruncateDataset(d, tagName string, queryFactory exec.QueryFactory) *TruncateDataset {
 	return &TruncateDataset{
 		clauses:      exp.NewTruncateClauses(),
-		dialect:      GetDialect(d),
+		dialect:      GetDialectWithTag(d, tagName),
+		tagName:      tagName,
 		queryFactory: queryFactory,
 	}
 }
 
 func Truncate(table ...interface{}) *TruncateDataset {
-	return newTruncateDataset("default", nil).Table(table...)
+	return newTruncateDataset("default", "db", nil).Table(table...)
 }
 
 // Sets the adapter used to serialize values and create the SQL statement
 func (td *TruncateDataset) WithDialect(dl string) *TruncateDataset {
 	ds := td.copy(td.GetClauses())
-	ds.dialect = GetDialect(dl)
+	ds.dialect = GetDialectWithTag(dl, td.tagName)
 	return ds
 }
 
@@ -80,6 +82,7 @@ func (td *TruncateDataset) copy(clauses exp.TruncateClauses) *TruncateDataset {
 		clauses:      clauses,
 		isPrepared:   td.isPrepared,
 		queryFactory: td.queryFactory,
+		tagName:      td.tagName,
 		err:          td.err,
 	}
 }
@@ -90,7 +93,7 @@ func (td *TruncateDataset) copy(clauses exp.TruncateClauses) *TruncateDataset {
 //   IdentifierExpression
 //   LiteralExpression: (See Literal) Will use the literal SQL
 func (td *TruncateDataset) Table(table ...interface{}) *TruncateDataset {
-	return td.copy(td.clauses.SetTable(exp.NewColumnListExpression(nil, table...)))
+	return td.copy(td.clauses.SetTable(exp.NewColumnListExpression(nil, td.tagName, table...)))
 }
 
 // Adds a CASCADE clause

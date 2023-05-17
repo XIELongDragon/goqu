@@ -25,8 +25,8 @@ type (
 
 var errNoSourceForTruncate = errors.New("no source found when generating truncate sql")
 
-func NewTruncateSQLGenerator(dialect string, do *SQLDialectOptions) TruncateSQLGenerator {
-	return &truncateSQLGenerator{NewCommonSQLGenerator(dialect, do)}
+func NewTruncateSQLGenerator(dialect, tagName string, do *SQLDialectOptions) TruncateSQLGenerator {
+	return &truncateSQLGenerator{NewCommonSQLGenerator(dialect, tagName, do)}
 }
 
 func (tsg *truncateSQLGenerator) Generate(b sb.SQLBuilder, clauses exp.TruncateClauses) {

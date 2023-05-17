@@ -57,6 +57,10 @@ func errUnsupportedBitwiseExpressionOperator(op exp.BitwiseOperation) error {
 	return errors.New("bitwise operator '%+v' not supported", op)
 }
 
+func errUnsupportedArithmeticExpressionOperator(op exp.ArithmeticOperation) error {
+	return errors.New("arithmetic operator '%+v' not supported", op)
+}
+
 func errUnsupportedRangeExpressionOperator(op exp.RangeOperation) error {
 	return errors.New("range operator %+v not supported", op)
 }
@@ -75,6 +79,7 @@ func (esg *expressionSQLGenerator) Dialect() string {
 
 var valuerReflectType = reflect.TypeOf((*driver.Valuer)(nil)).Elem()
 
+// nolint:gocyclo // processing all possible types
 func (esg *expressionSQLGenerator) Generate(b sb.SQLBuilder, val interface{}) {
 	if b.Error() != nil {
 		return
@@ -92,6 +97,12 @@ func (esg *expressionSQLGenerator) Generate(b sb.SQLBuilder, val interface{}) {
 		esg.literalInt(b, int64(v))
 	case int64:
 		esg.literalInt(b, v)
+	case uint:
+		esg.literalUint(b, uint64(v))
+	case uint32:
+		esg.literalUint(b, uint64(v))
+	case uint64:
+		esg.literalUint(b, v)
 	case float32:
 		esg.literalFloat(b, float64(v))
 	case float64:
@@ -145,7 +156,7 @@ func (esg *expressionSQLGenerator) reflectSQL(b sb.SQLBuilder, val interface{}) 
 	case util.IsInt(valKind):
 		esg.Generate(b, v.Int())
 	case util.IsUint(valKind):
-		esg.Generate(b, int64(v.Uint()))
+		esg.Generate(b, v.Uint())
 	case util.IsFloat(valKind):
 		esg.Generate(b, v.Float())
 	case util.IsString(valKind):
@@ -176,6 +187,8 @@ func (esg *expressionSQLGenerator) expressionSQL(b sb.SQLBuilder, expression exp
 		esg.booleanExpressionSQL(b, e)
 	case exp.BitwiseExpression:
 		esg.bitwiseExpressionSQL(b, e)
+	case exp.ArithmeticExpression:
+		esg.arithmeticExpressionSQL(b, e)
 	case exp.RangeExpression:
 		esg.rangeExpressionSQL(b, e)
 	case exp.OrderedExpression:
@@ -326,6 +339,15 @@ func (esg *expressionSQLGenerator) literalInt(b sb.SQLBuilder, i int64) {
 	b.WriteStrings(strconv.FormatInt(i, 10))
 }
 
+// Generates SQL for an uint value
+func (esg *expressionSQLGenerator) literalUint(b sb.SQLBuilder, i uint64) {
+	if b.IsPrepared() {
+		esg.placeHolderSQL(b, i)
+		return
+	}
+	b.WriteStrings(strconv.FormatUint(i, 10))
+}
+
 // Generates SQL for a string
 func (esg *expressionSQLGenerator) literalString(b sb.SQLBuilder, s string) {
 	if b.IsPrepared() {
@@ -405,15 +427,18 @@ func (esg *expressionSQLGenerator) booleanExpressionSQL(b sb.SQLBuilder, operato
 
 	if (operatorOp == exp.IsOp || operatorOp == exp.IsNotOp) && esg.dialectOptions.UseLiteralIsBools {
 		// these values must be interpolated because preparing them generates invalid SQL
-		switch rhs {
-		case true:
-			rhs = TrueLiteral
-		case false:
-			rhs = FalseLiteral
-		case nil:
+		if util.IsNil(rhs) {
 			rhs = exp.NewLiteralExpression(string(esg.dialectOptions.Null))
+		} else {
+			switch rhs {
+			case true:
+				rhs = TrueLiteral
+			case false:
+				rhs = FalseLiteral
+			}
 		}
 	}
+
 	b.WriteRunes(esg.dialectOptions.SpaceRune)
 
 	if (operatorOp == exp.IsOp || operatorOp == exp.IsNotOp) && rhs == nil && !esg.dialectOptions.BooleanDataTypeSupported {
@@ -421,6 +446,15 @@ func (esg *expressionSQLGenerator) booleanExpressionSQL(b sb.SQLBuilder, operato
 		b.Write(esg.dialectOptions.Null)
 	} else {
 		esg.Generate(b, rhs)
+	}
+
+	if operatorOp == exp.LikeOp || operatorOp == exp.NotLikeOp {
+		if len(esg.dialectOptions.LikeEscapeKey) > 0 {
+			b.WriteRunes(esg.dialectOptions.SpaceRune)
+			b.WriteStrings(esg.dialectOptions.LikeEscapeKey)
+			b.WriteRunes(esg.dialectOptions.SpaceRune)
+			esg.Generate(b, esg.dialectOptions.LikeEscapeValue)
+		}
 	}
 
 	b.WriteRunes(esg.dialectOptions.RightParenRune)
@@ -443,6 +477,23 @@ func (esg *expressionSQLGenerator) bitwiseExpressionSQL(b sb.SQLBuilder, operato
 		return
 	}
 
+	b.WriteRunes(esg.dialectOptions.SpaceRune)
+	esg.Generate(b, operator.RHS())
+	b.WriteRunes(esg.dialectOptions.RightParenRune)
+}
+
+// Generates SQL for a ArithmeticExpresion (e.g. I("a").Add(1) -> "a" + 1)
+func (esg *expressionSQLGenerator) arithmeticExpressionSQL(b sb.SQLBuilder, operator exp.ArithmeticExpression) {
+	b.WriteRunes(esg.dialectOptions.LeftParenRune)
+	esg.Generate(b, operator.LHS())
+	b.WriteRunes(esg.dialectOptions.SpaceRune)
+	operatorOp := operator.Op()
+	if val, ok := esg.dialectOptions.ArithmeticOperatorLookup[operatorOp]; ok {
+		b.Write(val)
+	} else {
+		b.SetError(errUnsupportedArithmeticExpressionOperator(operatorOp))
+		return
+	}
 	b.WriteRunes(esg.dialectOptions.SpaceRune)
 	esg.Generate(b, operator.RHS())
 	b.WriteRunes(esg.dialectOptions.RightParenRune)
@@ -557,7 +608,11 @@ func (esg *expressionSQLGenerator) literalExpressionSQL(b sb.SQLBuilder, literal
 // Generates SQL for a SQLFunctionExpression
 //   COUNT(I("a")) -> COUNT("a")
 func (esg *expressionSQLGenerator) sqlFunctionExpressionSQL(b sb.SQLBuilder, sqlFunc exp.SQLFunctionExpression) {
-	b.WriteStrings(sqlFunc.Name())
+	name := sqlFunc.Name()
+	if val, ok := esg.dialectOptions.FunctionNameLookup[name]; ok {
+		name = string(val)
+	}
+	b.WriteStrings(name)
 	esg.Generate(b, sqlFunc.Args())
 }
 

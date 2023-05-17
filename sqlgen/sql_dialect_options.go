@@ -177,6 +177,10 @@ type (
 		SetOperatorRune rune
 		// The placeholder fragment to use when generating a non interpolated statement (DEFAULT=[]byte"?")
 		PlaceHolderFragment []byte
+		// Set non-empty value if dialect support setting ESCAPE for like operation
+		LikeEscapeKey string
+		// Set non-empty value if dialect support setting ESCAPE for like operation
+		LikeEscapeValue string
 		// Empty string (DEFAULT="")
 		EmptyString string
 		// Comma rune (DEFAULT=',')
@@ -227,6 +231,14 @@ type (
 		// 		exp.BitwiseRightShiftOp: []byte(">>"),
 		// }),
 		BitwiseOperatorLookup map[exp.BitwiseOperation][]byte
+		// A map used to look up ArithmeticOperations and their SQL equivalents
+		// (Default=map[exp.ArithmeticOperatorLookup][]byte{
+		// 		exp.ArithmeticAddOp: []byte("+"),
+		// 		exp.ArithmeticSubOp: []byte("-"),
+		// 		exp.ArithmeticMulOp: []byte("*"),
+		// 		exp.ArithmeticDivOp: []byte("/"),
+		// }),
+		ArithmeticOperatorLookup map[exp.ArithmeticOperation][]byte
 		// A map used to look up RangeOperations and their SQL equivalents
 		// (Default=map[exp.RangeOperation][]byte{
 		// 		exp.BetweenOp:    []byte("BETWEEN"),
@@ -249,6 +261,14 @@ type (
 		// 		exp.CrossJoinType:        []byte(" CROSS JOIN "),
 		// 	})
 		JoinTypeLookup map[exp.JoinType][]byte
+		// A map used to look up Function name and their SQL equivalents
+		// (Default=map[string][]byte{
+		// 		exp.FunctionNameGreatest:    []byte("GREATEST"),
+		// 		exp.FunctionNameLeast:       []byte("LEAST"),
+		//      exp.FunctionNameUpper:       []byte("UPPER"),
+		//      exp.FunctionNameLower:       []byte("LOWER"),
+		// 	})
+		FunctionNameLookup map[string][]byte
 		// Whether or not boolean data type is supported
 		BooleanDataTypeSupported bool
 		// Whether or not to use literal TRUE or FALSE for IS statements (e.g. IS TRUE or IS 0)
@@ -500,6 +520,8 @@ func DefaultDialectOptions() *SQLDialectOptions {
 		RightParenRune:      ')',
 		StarRune:            '*',
 		PeriodRune:          '.',
+		LikeEscapeKey:       "",
+		LikeEscapeValue:     "",
 		EmptyString:         "",
 
 		BooleanOperatorLookup: map[exp.BooleanOperation][]byte{
@@ -530,6 +552,12 @@ func DefaultDialectOptions() *SQLDialectOptions {
 			exp.BitwiseLeftShiftOp:  []byte("<<"),
 			exp.BitwiseRightShiftOp: []byte(">>"),
 		},
+		ArithmeticOperatorLookup: map[exp.ArithmeticOperation][]byte{
+			exp.ArithmeticAddOp: []byte("+"),
+			exp.ArithmeticSubOp: []byte("-"),
+			exp.ArithmeticMulOp: []byte("*"),
+			exp.ArithmeticDivOp: []byte("/"),
+		},
 		RangeOperatorLookup: map[exp.RangeOperation][]byte{
 			exp.BetweenOp:    []byte("BETWEEN"),
 			exp.NotBetweenOp: []byte("NOT BETWEEN"),
@@ -547,6 +575,12 @@ func DefaultDialectOptions() *SQLDialectOptions {
 			exp.NaturalRightJoinType: []byte(" NATURAL RIGHT JOIN "),
 			exp.NaturalFullJoinType:  []byte(" NATURAL FULL JOIN "),
 			exp.CrossJoinType:        []byte(" CROSS JOIN "),
+		},
+		FunctionNameLookup: map[string][]byte{
+			exp.FunctionNameGreatest: []byte("GREATEST"),
+			exp.FunctionNameLeast:    []byte("LEAST"),
+			exp.FunctionNameUpper:    []byte("UPPER"),
+			exp.FunctionNameLower:    []byte("LOWER"),
 		},
 
 		TimeFormat: time.RFC3339Nano,

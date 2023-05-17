@@ -179,16 +179,26 @@ func (esgs *expressionSQLGeneratorSuite) TestGenerate_IntTypes() {
 		int16(10),
 		int32(10),
 		int64(10),
+	}
+	uints := []interface{}{
 		uint(10),
 		uint16(10),
 		uint32(10),
 		uint64(10),
 	}
+
 	for _, i := range ints {
 		esgs.assertCases(
 			sqlgen.NewExpressionSQLGenerator("test", sqlgen.DefaultDialectOptions()),
 			expressionTestCase{val: i, sql: "10"},
 			expressionTestCase{val: i, sql: "?", isPrepared: true, args: []interface{}{int64(10)}},
+		)
+	}
+	for _, i := range uints {
+		esgs.assertCases(
+			sqlgen.NewExpressionSQLGenerator("test", sqlgen.DefaultDialectOptions()),
+			expressionTestCase{val: i, sql: "10"},
+			expressionTestCase{val: i, sql: "?", isPrepared: true, args: []interface{}{uint64(10)}},
 		)
 	}
 	esgs.assertCases(
@@ -377,7 +387,7 @@ func (esgs *expressionSQLGeneratorSuite) TestGenerate_AppendableExpression() {
 }
 
 func (esgs *expressionSQLGeneratorSuite) TestGenerate_ColumnList() {
-	cl := exp.NewColumnListExpression("a", exp.NewLiteralExpression("true"))
+	cl := exp.NewColumnListExpression(nil, "a", exp.NewLiteralExpression("true"))
 	esgs.assertCases(
 		sqlgen.NewExpressionSQLGenerator("test", sqlgen.DefaultDialectOptions()),
 		expressionTestCase{val: cl, sql: `"a", true`},
@@ -430,17 +440,17 @@ func (esgs *expressionSQLGeneratorSuite) TestGenerate_ExpressionList() {
 
 func (esgs *expressionSQLGeneratorSuite) TestGenerate_LiteralExpression() {
 	noArgsL := exp.NewLiteralExpression(`"b"::DATE = '2010-09-02'`)
-	argsL := exp.NewLiteralExpression(`"b" = ? or "c" = ? or d IN ?`, "a", 1, []int{1, 2, 3, 4})
+	argsL := exp.NewLiteralExpression(`"b" = ? or "c" = ? or d IN ? or "e" = ?`, "a", 1, []int64{1, 2, 3, 4}, uint64(11169823557460058355))
 
 	esgs.assertCases(
 		sqlgen.NewExpressionSQLGenerator("test", sqlgen.DefaultDialectOptions()),
 		expressionTestCase{val: noArgsL, sql: `"b"::DATE = '2010-09-02'`},
 		expressionTestCase{val: noArgsL, sql: `"b"::DATE = '2010-09-02'`, isPrepared: true},
 
-		expressionTestCase{val: argsL, sql: `"b" = 'a' or "c" = 1 or d IN (1, 2, 3, 4)`},
+		expressionTestCase{val: argsL, sql: `"b" = 'a' or "c" = 1 or d IN (1, 2, 3, 4) or "e" = 11169823557460058355`},
 		expressionTestCase{
 			val:        argsL,
-			sql:        `"b" = ? or "c" = ? or d IN (?, ?, ?, ?)`,
+			sql:        `"b" = ? or "c" = ? or d IN (?, ?, ?, ?) or "e" = ?`,
 			isPrepared: true,
 			args: []interface{}{
 				"a",
@@ -449,6 +459,7 @@ func (esgs *expressionSQLGeneratorSuite) TestGenerate_LiteralExpression() {
 				int64(2),
 				int64(3),
 				int64(4),
+				uint64(11169823557460058355),
 			},
 		},
 	)
@@ -661,6 +672,34 @@ func (esgs *expressionSQLGeneratorSuite) TestGenerate_BitwiseExpression() {
 		expressionTestCase{val: ident.BitwiseRightShift(1), err: "goqu: bitwise operator 'Right Shift' not supported"},
 	)
 }
+
+func (esgs *expressionSQLGeneratorSuite) TestGenerate_ArithmeticExpression() {
+	ident := exp.NewIdentifierExpression("", "", "a")
+	esgs.assertCases(
+		sqlgen.NewExpressionSQLGenerator("test", sqlgen.DefaultDialectOptions()),
+		expressionTestCase{val: ident.Add(1), sql: `("a" + 1)`},
+		expressionTestCase{val: ident.Add(1), sql: `("a" + ?)`, isPrepared: true, args: []interface{}{int64(1)}},
+
+		expressionTestCase{val: ident.Sub(1), sql: `("a" - 1)`},
+		expressionTestCase{val: ident.Sub(1), sql: `("a" - ?)`, isPrepared: true, args: []interface{}{int64(1)}},
+
+		expressionTestCase{val: ident.Mul(1), sql: `("a" * 1)`},
+		expressionTestCase{val: ident.Mul(1), sql: `("a" * ?)`, isPrepared: true, args: []interface{}{int64(1)}},
+
+		expressionTestCase{val: ident.Div(1), sql: `("a" / 1)`},
+		expressionTestCase{val: ident.Div(1), sql: `("a" / ?)`, isPrepared: true, args: []interface{}{int64(1)}},
+	)
+	opts := sqlgen.DefaultDialectOptions()
+	opts.ArithmeticOperatorLookup = map[exp.ArithmeticOperation][]byte{}
+	esgs.assertCases(
+		sqlgen.NewExpressionSQLGenerator("test", opts),
+		expressionTestCase{val: ident.Add(1), err: "goqu: arithmetic operator 'Addition' not supported"},
+		expressionTestCase{val: ident.Sub(1), err: "goqu: arithmetic operator 'Subtraction' not supported"},
+		expressionTestCase{val: ident.Mul(1), err: "goqu: arithmetic operator 'Multiplication' not supported"},
+		expressionTestCase{val: ident.Div(1), err: "goqu: arithmetic operator 'Division' not supported"},
+	)
+}
+
 func (esgs *expressionSQLGeneratorSuite) TestGenerate_RangeExpression() {
 	betweenNum := exp.NewIdentifierExpression("", "", "a").
 		Between(exp.NewRangeVal(1, 2))
@@ -837,7 +876,7 @@ func (esgs *expressionSQLGeneratorSuite) TestGenerate_WindowExpression() {
 		nil, exp.NewIdentifierExpression("", "", "w"), nil, nil,
 	)
 	partitionBySQLWinFunc := exp.NewWindowExpression(
-		nil, nil, exp.NewColumnListExpression("a", "b"), nil,
+		nil, nil, exp.NewColumnListExpression(nil, "a", "b"), nil,
 	)
 	orderBySQLWinFunc := exp.NewWindowExpression(
 		nil, nil, nil, exp.NewOrderedColumnList(
@@ -849,7 +888,7 @@ func (esgs *expressionSQLGeneratorSuite) TestGenerate_WindowExpression() {
 	namedInheritPartitionOrderSQLWinFunc := exp.NewWindowExpression(
 		exp.NewIdentifierExpression("", "", "w1"),
 		exp.NewIdentifierExpression("", "", "w2"),
-		exp.NewColumnListExpression("a", "b"),
+		exp.NewColumnListExpression(nil, "a", "b"),
 		exp.NewOrderedColumnList(
 			exp.NewIdentifierExpression("", "", "a").Asc(),
 			exp.NewIdentifierExpression("", "", "b").Desc(),

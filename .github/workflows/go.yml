@@ -30,6 +30,7 @@ jobs:
       MYSQL_VERSION: ${{ matrix.db_versions.mysql_version }}
       POSTGRES_VERSION: ${{ matrix.db_versions.postgres_version }}
       SQLSERVER_VERSION: ${{ matrix.db_versions.sqlserver_version }}
+      WAITFORIT_TIMEOUT: 60
     steps:
     - name: checkout
       uses: actions/checkout@v3

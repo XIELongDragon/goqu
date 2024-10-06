@@ -24,6 +24,12 @@ func NewUpdateExpressions(tagName string, update interface{}) (updates []UpdateE
 		updates = append(updates, us...)
 		return updates, nil
 	}
+
+	if u, ok := update.(UpdateExpression); ok {
+		updates = append(updates, u)
+		return updates, nil
+	}
+
 	updateValue := reflect.Indirect(reflect.ValueOf(update))
 	switch updateValue.Kind() {
 	case reflect.Map:

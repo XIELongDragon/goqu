@@ -238,7 +238,7 @@ func (iets *insertExpressionTestSuite) TestNewInsertExpression_withStructsWithGo
 		testRecord{FieldA: 2, FieldB: false, FieldC: "b"},
 	)
 	iets.NoError(err)
-	iets.Equal(exp.NewColumnListExpression(nil, "fielda", "fieldb"), ie.Cols())
+	iets.Equal(exp.NewColumnListExpression(nil, "db", "fielda", "fieldb"), ie.Cols())
 	iets.Equal([][]interface{}{{int64(1), true}, {int64(2), false}}, ie.Vals())
 	iets.False(ie.IsEmpty())
 	iets.False(ie.IsInsertFrom())

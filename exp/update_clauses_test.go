@@ -67,7 +67,7 @@ func (ucs *updateClausesSuite) TestSetSetValues() {
 
 func (ucs *updateClausesSuite) TestFrom() {
 	c := exp.NewUpdateClauses()
-	ce := exp.NewColumnListExpression(nil, "a", "b")
+	ce := exp.NewColumnListExpression(nil, "db", "a", "b")
 	c2 := c.SetFrom(ce)
 
 	ucs.Nil(c.From())
@@ -76,9 +76,9 @@ func (ucs *updateClausesSuite) TestFrom() {
 }
 
 func (ucs *updateClausesSuite) TestSetFrom() {
-	ce1 := exp.NewColumnListExpression(nil, "a", "b")
+	ce1 := exp.NewColumnListExpression(nil, "db", "a", "b")
 	c := exp.NewUpdateClauses().SetFrom(ce1)
-	ce2 := exp.NewColumnListExpression(nil, "a", "b")
+	ce2 := exp.NewColumnListExpression(nil, "db", "a", "b")
 	c2 := c.SetFrom(ce2)
 
 	ucs.Equal(ce1, c.From())

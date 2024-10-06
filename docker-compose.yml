@@ -28,9 +28,9 @@ services:
       - "ACCEPT_EULA=Y"
       - "SA_PASSWORD=qwe123QWE"
     expose:
-      - "1433"
+      - "1403"
     ports:
-      - "1433:1433"
+      - "1403:1433"
 
   goqu:
     image: "golang:${GO_VERSION}"
@@ -41,7 +41,7 @@ services:
     environment:
       MYSQL_URI: 'root@tcp(mysql:3306)/goqumysql?parseTime=true'
       PG_URI: 'postgres://postgres:@postgres:5432/goqupostgres?sslmode=disable'
-      SQLSERVER_URI: 'sqlserver://sa:qwe123QWE@sqlserver:1433?database=master&connection+timeout=30'
+      SQLSERVER_URI: 'sqlserver://sa:qwe123QWE@sqlserver:1403?database=master&connection+timeout=30'
       WAITFORIT_TIMEOUT: 60
     depends_on:
       - postgres
@@ -56,7 +56,7 @@ services:
     environment:
       MYSQL_URI: 'root@tcp(mysql:3306)/goqumysql?parseTime=true'
       PG_URI: 'postgres://postgres:@postgres:5432/goqupostgres?sslmode=disable'
-      SQLSERVER_URI: 'sqlserver://sa:qwe123QWE@sqlserver:1433?database=master&connection+timeout=30'
+      SQLSERVER_URI: 'sqlserver://sa:qwe123QWE@sqlserver:1403?database=master&connection+timeout=30'
     depends_on:
       - postgres
       - mysql

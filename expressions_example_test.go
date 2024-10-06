@@ -1,4 +1,4 @@
-// nolint:lll // sql statements are long
+//nolint:lll // sql statements are long
 package goqu_test
 
 import (
@@ -1397,7 +1397,6 @@ func ExampleExOr() {
 	).ToSQL()
 	fmt.Println(sql, args)
 
-	// nolint:lll // sql statements are long
 	// Output:
 	// SELECT * FROM "items" WHERE (("col1" = 'a') OR ("col2" = 1) OR ("col3" IS TRUE) OR ("col4" IS FALSE) OR ("col5" IS NULL) OR ("col6" IN ('a', 'b', 'c'))) []
 }

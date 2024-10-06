@@ -20,8 +20,8 @@ func set(col IdentifierExpression, val interface{}) UpdateExpression {
 }
 
 func NewUpdateExpressions(tagName string, update interface{}) (updates []UpdateExpression, err error) {
-	if u, ok := update.(UpdateExpression); ok {
-		updates = append(updates, u)
+	if us, ok := update.([]UpdateExpression); ok {
+		updates = append(updates, us...)
 		return updates, nil
 	}
 	updateValue := reflect.Indirect(reflect.ValueOf(update))
